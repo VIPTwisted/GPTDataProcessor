@@ -1,0 +1,92 @@
+🏁 PHASE 43: WHITE-LABEL MODE + MULTI-BRAND DEPLOYMENT ENGINE
+
+This module allows the Gemini OS to dynamically adjust its:
+
+🪪 Brand name, logo, theme
+
+🎨 Color palette
+
+💼 Custom domain config
+
+📁 Clone-ready repo and .env replication
+
+Perfect for franchising, affiliate brands, or network resale.
+
+✅ 43.1 — White-Label Context Config
+js
+Copy
+Edit
+// logic/brand-config.js
+export const BRAND_PROFILES = {
+  'toyparty': {
+    name: 'ToyParty',
+    primaryColor: '#ff0066',
+    logo: '/logos/toyparty.svg',
+    domain: 'toyparty.com'
+  },
+  'boldbeauty': {
+    name: 'BoldBeauty',
+    primaryColor: '#6a00ff',
+    logo: '/logos/boldbeauty.svg',
+    domain: 'boldbeauty.global'
+  }
+};
+
+export const getBrandProfile = (brandId) => BRAND_PROFILES[brandId] || BRAND_PROFILES['toyparty'];
+✅ 43.2 — Dynamic Branding Hook (React)
+jsx
+Copy
+Edit
+// src/context/BrandContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getBrandProfile } from '../logic/brand-config';
+
+const BrandContext = createContext();
+
+export const BrandProvider = ({ children }) => {
+  const [brand, setBrand] = useState(getBrandProfile('toyparty'));
+
+  useEffect(() => {
+    const hostname = window.location.hostname.split('.')[0];
+    const profile = getBrandProfile(hostname);
+    setBrand(profile);
+  }, []);
+
+  return <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>;
+};
+
+export const useBrand = () => useContext(BrandContext);
+✅ 43.3 — Brand-aware Header Example
+jsx
+Copy
+Edit
+// src/components/BrandHeader.jsx
+import React from 'react';
+import { useBrand } from '../context/BrandContext';
+
+const BrandHeader = () => {
+  const brand = useBrand();
+
+  return (
+    <header className="flex items-center justify-between p-4 shadow bg-white dark:bg-gray-800">
+      <img src={brand.logo} alt="logo" className="h-8" />
+      <h1 className="text-xl font-bold text-gray-800 dark:text-white">{brand.name}</h1>
+    </header>
+  );
+};
+
+export default BrandHeader;
+✅ 43.4 — Gemini Snapshot Shell (White-Label Clone)
+bash
+Copy
+Edit
+# scripts/clone-brand.sh
+#!/bin/bash
+BRAND=$1
+mkdir deploys/$BRAND
+cp -r src/ deploys/$BRAND/src
+cp .env deploys/$BRAND/.env
+sed -i "" "s/BRAND_ID=.*/BRAND_ID=$BRAND/" deploys/$BRAND/.env
+echo "✅ $BRAND deployment ready."
+✅ White-Label Mode + Brand Deployment Shell DONE.
+

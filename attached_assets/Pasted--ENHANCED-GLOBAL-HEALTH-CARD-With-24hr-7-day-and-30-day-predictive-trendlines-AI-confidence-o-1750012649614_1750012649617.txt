@@ -1,0 +1,148 @@
+🔮 ENHANCED GLOBAL HEALTH CARD
+(With 24hr, 7-day, and 30-day predictive trendlines + AI confidence overlays)
+This transforms the original GlobalHealthCard from a static health indicator into a multi-layer predictive insight engine, aligning with your “Cognitive Autonomy” principle.
+
+✅ Step 1: Update mockGlobalData.js with Forecast Data
+js
+Copy
+Edit
+// Add this to mockGlobalHealth object in src/data/mockGlobalData.js
+
+forecastTrend: {
+  '24hr': [
+    { hour: '00', value: 99.9 },
+    { hour: '06', value: 99.8 },
+    { hour: '12', value: 99.7 },
+    { hour: '18', value: 99.9 },
+    { hour: '24', value: 99.95 },
+  ],
+  '7d': [
+    { day: 'Mon', value: 99.8 },
+    { day: 'Tue', value: 99.9 },
+    { day: 'Wed', value: 99.85 },
+    { day: 'Thu', value: 99.92 },
+    { day: 'Fri', value: 99.94 },
+    { day: 'Sat', value: 99.88 },
+    { day: 'Sun', value: 99.97 },
+  ],
+  '30d': [
+    { day: 1, value: 99.7 }, { day: 5, value: 99.8 }, { day: 10, value: 99.75 },
+    { day: 15, value: 99.82 }, { day: 20, value: 99.9 }, { day: 25, value: 99.88 },
+    { day: 30, value: 99.93 },
+  ]
+}
+✅ Step 2: Update GlobalHealthCard.jsx
+We’ll add tabs for selecting forecast range and render them with Recharts.
+
+jsx
+Copy
+Edit
+// src/components/widgets/GlobalHealthCard.jsx
+import React, { useState } from 'react';
+import AnimatedCard from './AnimatedCard';
+import SparklineChart from './SparklineChart';
+import { mockGlobalHealth, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+
+const GlobalHealthCard = ({ onClick }) => {
+  const {
+    status, description, predictedStatus, predictionConfidence,
+    performanceMetrics, trendData, forecastTrend
+  } = mockGlobalHealth;
+
+  const statusColorClass = getStatusColor(status);
+  const predictionColorClass = getStatusColor(predictedStatus);
+  const [forecastRange, setForecastRange] = useState('7d');
+
+  return (
+    <AnimatedCard
+      title="Global System Health"
+      subTitle="AI-Driven Operational Forecasting"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-2"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColorClass}`}>
+            {getStatusIcon(status)} {status}
+          </span>
+          <p className="ml-3 text-gray-700 dark:text-gray-300 text-lg font-medium">{description}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Current Uptime</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{performanceMetrics.uptime}%</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Avg. Response Time</p>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{performanceMetrics.response_time_avg} ms</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Error Rate</p>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{performanceMetrics.error_rate}%</p>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+          <span className="mr-2">🧠</span> AI Forecast
+        </h4>
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">24-Hour Prediction</p>
+            <p className={`text-xl font-bold ${predictionColorClass}`}>
+              {getStatusIcon(predictedStatus)} {predictedStatus}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Confidence</p>
+            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{(predictionConfidence * 100).toFixed(0)}%</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 text-sm mb-2">
+          {['24hr', '7d', '30d'].map(range => (
+            <button
+              key={range}
+              onClick={() => setForecastRange(range)}
+              className={`px-3 py-1 rounded-full border ${
+                forecastRange === range
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
+              }`}
+            >
+              {range.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <SparklineChart
+          data={forecastTrend[forecastRange].map((point, i) => ({
+            name: point.hour || point.day || point.date || `Point ${i + 1}`,
+            value: point.value
+          }))}
+          dataKey="value"
+          strokeColor={
+            status === 'GREEN'
+              ? '#10B981'
+              : status === 'YELLOW'
+              ? '#F59E0B'
+              : '#EF4444'
+          }
+        />
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default GlobalHealthCard;
+✅ Result:
+🟢 AI Prediction
+
+📊 24hr / 7d / 30d uptime forecast
+
+🔁 Interactive toggle
+
+🔉 Confidence and color-coded risk

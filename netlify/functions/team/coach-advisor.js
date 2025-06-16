@@ -1,0 +1,47 @@
+
+exports.handler = async (event, context) => {
+  try {
+    const { repProfile } = JSON.parse(event.body);
+
+    // Mock GPT response for coaching advice
+    const mockAdvice = {
+      tips: [
+        "Focus on building stronger customer relationships through follow-up messaging",
+        "Complete the 'Advanced Upselling' training module to boost average order value"
+      ],
+      strengths: [
+        "Strong campaign execution",
+        "Consistent training completion"
+      ],
+      improvements: [
+        "Increase social media engagement",
+        "Optimize party hosting frequency"
+      ],
+      nextGoals: [
+        "Achieve Level 4 certification",
+        "Launch 3 campaigns this month"
+      ]
+    }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        advice: mockAdvice,
+        repId: repProfile.id || 'unknown',
+        timestamp: new Date().toISOString()
+      })
+    }
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    }
+  }
+}

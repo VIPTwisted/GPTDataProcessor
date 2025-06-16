@@ -1,0 +1,243 @@
+
+const fs = require('fs');
+const { execSync } = require('child_process');
+const { fixGitLockPermanently } = require('./fix-git-lock.js');
+
+class ConsoleSyncMonitor {
+  constructor() {
+    this.filesDiscovered = 0;
+    this.filesSynced = 0;
+    this.syncStatus = 'INITIALIZING';
+    this.startTime = Date.now();
+    this.errors = [];
+    this.successfulRepos = [];
+    
+    console.clear();
+    this.displayHeader();
+  }
+
+  displayHeader() {
+    console.log('\n💥 ═══════════════════════════════════════════════════════');
+    console.log('💥 NUCLEAR SYNC CONSOLE MONITOR - LIVE STATUS');
+    console.log('💥 ═══════════════════════════════════════════════════════');
+    console.log(`🕐 Started: ${new Date().toLocaleTimeString()}`);
+    console.log('💥 ═══════════════════════════════════════════════════════\n');
+  }
+
+  updateStatus(status, details = '') {
+    this.syncStatus = status;
+    console.log(`🔄 STATUS: ${status}${details ? ` - ${details}` : ''}`);
+  }
+
+  logFileDiscovery(count) {
+    this.filesDiscovered = count;
+    console.log(`📁 FILES DISCOVERED: ${count} files ready for sync`);
+  }
+
+  logRepoSync(repoName, fileCount, status) {
+    if (status === 'SUCCESS') {
+      this.filesSynced += fileCount;
+      this.successfulRepos.push(repoName);
+      console.log(`✅ ${repoName}: ${fileCount} files synced successfully`);
+    } else {
+      this.errors.push({ repo: repoName, error: status });
+      console.log(`❌ ${repoName}: FAILED - ${status}`);
+    }
+    this.displayProgress();
+  }
+
+  logError(error) {
+    this.errors.push({ general: error });
+    console.log(`🚨 ERROR: ${error}`);
+  }
+
+  displayProgress() {
+    const elapsed = Math.round((Date.now() - this.startTime) / 1000);
+    console.log('\n📊 SYNC PROGRESS:');
+    console.log(`   ⏱️  Elapsed Time: ${elapsed}s`);
+    console.log(`   📁 Total Files: ${this.filesDiscovered}`);
+    console.log(`   ✅ Files Synced: ${this.filesSynced}`);
+    console.log(`   🎯 Repos Synced: ${this.successfulRepos.length}/5`);
+    console.log(`   ❌ Errors: ${this.errors.length}`);
+    
+    if (this.successfulRepos.length > 0) {
+      console.log(`   🚀 Success: ${this.successfulRepos.join(', ')}`);
+    }
+    
+    console.log('─'.repeat(60));
+  }
+
+  displayFinalStatus() {
+    console.log('\n💥 ═══════════════════════════════════════════════════════');
+    console.log('💥 FINAL SYNC STATUS');
+    console.log('💥 ═══════════════════════════════════════════════════════');
+    
+    const elapsed = Math.round((Date.now() - this.startTime) / 1000);
+    const success = this.errors.length === 0;
+    
+    console.log(`⏱️  Total Time: ${elapsed} seconds`);
+    console.log(`📁 Files Processed: ${this.filesDiscovered}`);
+    console.log(`✅ Files Synced: ${this.filesSynced}`);
+    console.log(`🎯 Repos Synced: ${this.successfulRepos.length}/5`);
+    console.log(`❌ Total Errors: ${this.errors.length}`);
+    
+    if (success) {
+      console.log('\n🎉 NUCLEAR SYNC COMPLETE - ALL FILES SYNCHRONIZED!');
+      console.log('🌐 All repositories updated on GitHub');
+      console.log('⚡ Netlify will auto-deploy from GitHub updates');
+    } else {
+      console.log('\n⚠️  SYNC COMPLETED WITH SOME ISSUES');
+      this.errors.forEach((error, index) => {
+        console.log(`   ${index + 1}. ${error.repo || 'General'}: ${error.error || error.general}`);
+      });
+    }
+    
+    console.log('\n🔗 CHECK YOUR REPOSITORIES:');
+    console.log('   🏠 ToyParty: https://github.com/VIPTwisted/ToyParty');
+    console.log('   📧 EmailBot: https://github.com/VIPTwisted/GPTEmailBot');
+    console.log('   📊 DataProcessor: https://github.com/VIPTwisted/GPTDataProcessor');
+    console.log('   📈 Analytics: https://github.com/VIPTwisted/GPTAnalytics');
+    console.log('   💬 ChatBot: https://github.com/VIPTwisted/GPTChatBot');
+    
+    console.log('\n💥 ═══════════════════════════════════════════════════════');
+    
+    return success;
+  }
+}
+
+// Real-time sync execution with console monitoring
+async function executeNuclearSyncWithMonitoring() {
+  const monitor = new ConsoleSyncMonitor();
+  
+  try {
+    monitor.updateStatus('INITIALIZING NUCLEAR PROTOCOLS');
+    
+    // Step 1: Fix git locks permanently
+    monitor.updateStatus('DESTROYING GIT LOCKS');
+    fixGitLockPermanently();
+    
+    // Step 2: Discover files
+    monitor.updateStatus('DISCOVERING FILES');
+    const files = discoverFiles();
+    monitor.logFileDiscovery(files.length);
+    
+    // Step 3: Load deploy config
+    monitor.updateStatus('LOADING DEPLOYMENT CONFIG');
+    if (!fs.existsSync('deploy.json')) {
+      throw new Error('deploy.json not found');
+    }
+    
+    const config = JSON.parse(fs.readFileSync('deploy.json', 'utf8'));
+    
+    // Step 4: Sync each repository
+    monitor.updateStatus('STARTING REPOSITORY SYNC');
+    
+    for (const repoConfig of config.repos) {
+      const repoName = `${repoConfig.repo_owner}/${repoConfig.repo_name}`;
+      monitor.updateStatus('SYNCING', repoName);
+      
+      try {
+        const result = await syncRepositoryWithMonitoring(repoConfig, files, monitor);
+        monitor.logRepoSync(repoName, files.length, result.success ? 'SUCCESS' : result.error);
+        
+        // Brief pause between repos
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+      } catch (error) {
+        monitor.logRepoSync(repoName, 0, error.message);
+      }
+    }
+    
+    // Final status
+    const success = monitor.displayFinalStatus();
+    process.exit(success ? 0 : 1);
+    
+  } catch (error) {
+    monitor.logError(error.message);
+    monitor.displayFinalStatus();
+    process.exit(1);
+  }
+}
+
+function discoverFiles() {
+  const files = [];
+  const excludeDirs = ['.git', 'node_modules', '.replit', '.cache', 'logs'];
+  const excludeFiles = ['.gitignore', 'package-lock.json', '.replit'];
+
+  function scanDirectory(dir) {
+    if (!fs.existsSync(dir)) return;
+
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+
+      for (const item of items) {
+        const fullPath = require('path').join(dir, item.name);
+
+        if (item.isDirectory() && !excludeDirs.includes(item.name)) {
+          scanDirectory(fullPath);
+        } else if (item.isFile() && !excludeFiles.includes(item.name)) {
+          files.push(fullPath);
+        }
+      }
+    } catch (error) {
+      // Skip inaccessible directories
+    }
+  }
+
+  scanDirectory('.');
+  return files;
+}
+
+async function syncRepositoryWithMonitoring(repoConfig, files, monitor) {
+  const { repo_owner, repo_name, branch = 'main', username } = repoConfig;
+  
+  try {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    if (!GITHUB_TOKEN) {
+      throw new Error('GitHub token not found');
+    }
+    
+    const COMMIT_MESSAGE = `💥 NUCLEAR SYNC - Console Monitored
+📁 Files: ${files.length}
+🕐 Time: ${new Date().toISOString()}
+🤖 Status: FORCE SYNCHRONIZED`;
+
+    // Clean start
+    execSync('rm -rf .git', { stdio: 'pipe' });
+    execSync(`git init --initial-branch=${branch}`, { stdio: 'pipe' });
+    execSync('git config user.email "nuclear@autobot.ai"', { stdio: 'pipe' });
+    execSync('git config user.name "Nuclear Console Sync"', { stdio: 'pipe' });
+
+    // Add remote
+    const remote = `https://${username}:${GITHUB_TOKEN}@github.com/${repo_owner}/${repo_name}.git`;
+    execSync(`git remote add origin ${remote}`, { stdio: 'pipe' });
+
+    // Add files in batches
+    const batchSize = 50;
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      const quotedFiles = batch.map(file => `"${file}"`).join(' ');
+      try {
+        execSync(`git add -f ${quotedFiles}`, { stdio: 'pipe' });
+      } catch (error) {
+        // Continue on file add errors
+      }
+    }
+
+    // Commit and push
+    execSync(`git commit -m "${COMMIT_MESSAGE}"`, { stdio: 'pipe' });
+    execSync(`git push -u origin ${branch} --force`, { stdio: 'pipe' });
+
+    return { success: true };
+    
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Execute if run directly
+if (require.main === module) {
+  executeNuclearSyncWithMonitoring();
+}
+
+module.exports = ConsoleSyncMonitor;

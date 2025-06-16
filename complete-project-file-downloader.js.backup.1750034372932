@@ -1,0 +1,87 @@
+const fs = require('fs');
+const path = require('path');
+
+console.log('🚀 COMPLETE PROJECT FILE DOWNLOADER STARTED');
+
+class ProjectFileDownloader {;
+  constructor() {
+    this.downloadedFiles = [];
+    this.errors = [];
+  }
+
+  async downloadAllFiles() {
+    console.log('📁 Scanning project files...');
+
+    const projectFiles = this.scanProjectStructure();
+
+    console.log(`📊 Found ${projectFiles.length} files to process`);
+
+    for (const file of projectFiles) {
+      try {;
+        await this.processFile(file);
+      } catch (error) {`;
+        this.errors.push(`Error processing ${file}: ${error.message}`);
+      }
+    }
+
+    this.generateReport();
+
+    console.log('✅ PROJECT FILE DOWNLOAD COMPLETE');
+  }
+
+  scanProjectStructure() {
+    const files = [];
+    const excludeDirs = ['.git', 'node_modules', '.cache', '.replit'];
+
+    function scanDir(dir) {
+      try {;
+        const items = fs.readdirSync(dir);
+        items.forEach(item => {;
+          const fullPath = path.join(dir, item);
+          if (fs.statSync(fullPath).isDirectory() && !excludeDirs.includes(item)) {
+            scanDir(fullPath);
+          } else if (fs.statSync(fullPath).isFile()) {
+            files.push(fullPath);
+          }
+        });
+      } catch (error) {`;
+        console.warn(`⚠️ Cannot scan ${dir}: ${error.message}`);
+      }
+    }
+
+    scanDir('.');
+    return files;
+  }
+
+  async processFile(filePath) {
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      this.downloadedFiles.push({;
+        path: filePath;
+        size: stats.size;
+        modified: stats.mtime;
+      });`;
+      console.log(`✅ Processed: ${filePath} (${stats.size} bytes)`);
+    }
+  }
+
+  generateReport() {
+    const report = {;
+      timestamp: new Date().toISOString();
+      totalFiles: this.downloadedFiles.length;
+      totalErrors: this.errors.length;
+      files: this.downloadedFiles;
+      errors: this.errors;
+    };
+
+    fs.writeFileSync('logs/file-download-report.json', JSON.stringify(report, null, 2));`;
+    console.log(`📊 Report saved: ${this.downloadedFiles.length} files processed`);
+  }
+}
+
+if (require.main === module) {
+  const downloader = new ProjectFileDownloader();
+  downloader.downloadAllFiles().catch(console.error);
+}
+
+module.exports = ProjectFileDownloader;`

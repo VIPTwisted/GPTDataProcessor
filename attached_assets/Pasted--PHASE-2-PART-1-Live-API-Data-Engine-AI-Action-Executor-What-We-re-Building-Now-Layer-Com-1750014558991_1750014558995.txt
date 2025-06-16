@@ -1,0 +1,124 @@
+🔧 PHASE 2 — PART 1: Live API Data Engine + AI Action Executor
+🔥 What We’re Building Now:
+Layer	Component	Function
+⚡ api/data/intel-router.js	Routes all real-time external fetches by endpoint type	
+🧠 api/ai/execute-playbook.js	Executes AI playbook actions (via Netlify function POST)	
+🔄 GPT-Autonomous Suggestor	GPT scans live data + queues actions	
+📈 Frontend integration	Real dashboard views go from static ➜ dynamic via live fetch hooks	
+🛡 Secure	Token + rate-limited, roles-aware	
+
+✅ Step 1: Create netlify/functions/data/intel-router.js
+js
+Copy
+Edit
+// netlify/functions/data/intel-router.js
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  const { type, params } = JSON.parse(event.body);
+
+  try {
+    let response;
+
+    switch (type) {
+      case 'seo_forecast':
+        response = await fetch(`https://api.similarweb.com/v1/traffic/forecast?domain=${params.domain}`, {
+          headers: { 'Authorization': `Bearer ${process.env.SW_API_KEY}` }
+        });
+        break;
+
+      case 'support_volume':
+        response = await fetch(`https://api.zendesk.com/v2/tickets/forecast.json`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.ZD_API_TOKEN}`
+          }
+        });
+        break;
+
+      case 'instagram_influencer_reach':
+        response = await fetch(`https://graph.facebook.com/v17.0/${params.id}/insights?metric=reach,engagement`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.IG_TOKEN}`
+          }
+        });
+        break;
+
+      default:
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Unsupported type.' })
+        };
+    }
+
+    const data = await response.json();
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ data })
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message })
+    };
+  }
+};
+✅ This allows one intelligent Netlify endpoint to:
+
+Call Zendesk, SimilarWeb, Meta Graph, and more
+
+Securely route all intelligence queries from the frontend
+
+Be extended with GPT prompting logic
+
+✅ Step 2: Create netlify/functions/ai/execute-playbook.js
+js
+Copy
+Edit
+// netlify/functions/ai/execute-playbook.js
+exports.handler = async (event) => {
+  const { playbookId, steps, executedBy } = JSON.parse(event.body);
+
+  console.log(`🧠 Executing Playbook: ${playbookId}`);
+  const executionLog = [];
+
+  for (const step of steps) {
+    if (step.type === 'System') {
+      executionLog.push({
+        step: step.title,
+        status: 'Completed',
+        timestamp: new Date().toISOString(),
+        notes: `Auto-executed by AI system`
+      });
+    } else if (step.type === 'Approval') {
+      executionLog.push({
+        step: step.title,
+        status: 'Awaiting Approval',
+        assignedTo: step.assignedTo || 'manager@domain.com'
+      });
+    } else if (step.type === 'Human') {
+      executionLog.push({
+        step: step.title,
+        status: 'Delegated',
+        assignedTo: step.assignedTo || 'ops_team'
+      });
+    }
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      success: true,
+      playbookId,
+      executedBy,
+      log: executionLog
+    })
+  };
+};
+✅ This endpoint lets your GPT system or human user:
+
+POST an entire playbook execution request
+
+Handles different step types: System, Approval, Human
+
+Returns real execution trail (can be piped to logs, Slack, etc.)
+

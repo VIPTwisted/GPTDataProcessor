@@ -1,0 +1,136 @@
+
+exports.handler = async (event, context) => {
+  try {
+    const mockOrgData = {
+      revenue: {
+        mtd: 82400,
+        growth: 16.3,
+        forecast: 95600
+      },
+      reps: {
+        total: 147,
+        active: 132,
+        newThisMonth: 58,
+        churnRisk: 3
+      },
+      training: {
+        overallCompletion: 67,
+        certifications: 89,
+        avgScore: 84.2
+      },
+      campaigns: {
+        launched: 212,
+        active: 45,
+        avgEngagement: 7.8
+      },
+      systemHealth: {
+        overall: 94,
+        api: 98,
+        database: 91,
+        cache: 96,
+        ai: 89
+      }
+    };
+
+    // Generate AI insights
+    const insights = generateAIInsights(mockOrgData);
+    
+    // Generate alerts
+    const alerts = generateAlerts(mockOrgData);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        data: mockOrgData,
+        insights,
+        alerts,
+        lastUpdated: new Date().toISOString(),
+        nextUpdate: new Date(Date.now() + 5 * 60000).toISOString() // 5 minutes
+      })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    };
+  }
+};
+
+function generateAIInsights(data) {
+  const insights = [];
+
+  if (data.revenue.growth > 15) {
+    insights.push({
+      type: 'positive',
+      message: 'Revenue growth is exceeding targets by 23%. Consider scaling marketing efforts.',
+      confidence: 0.92
+    });
+  }
+
+  if (data.training.overallCompletion < 70) {
+    insights.push({
+      type: 'improvement',
+      message: 'Training completion rates could be improved with gamification incentives.',
+      confidence: 0.84
+    });
+  }
+
+  if (data.reps.churnRisk > 0) {
+    insights.push({
+      type: 'warning',
+      message: `${data.reps.churnRisk} reps showing churn signals. Immediate coaching recommended.`,
+      confidence: 0.78
+    });
+  }
+
+  if (data.systemHealth.overall > 90) {
+    insights.push({
+      type: 'positive',
+      message: 'System performance is excellent. Self-healing mechanisms are working effectively.',
+      confidence: 0.96
+    });
+  }
+
+  return insights;
+}
+
+function generateAlerts(data) {
+  const alerts = [];
+
+  if (data.systemHealth.ai < 90) {
+    alerts.push({
+      type: 'warning',
+      message: 'AI system performance degraded. Check GPT response times.',
+      priority: 'medium',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (data.reps.churnRisk > 2) {
+    alerts.push({
+      type: 'critical',
+      message: 'Multiple reps at churn risk. Immediate intervention required.',
+      priority: 'high',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (data.campaigns.avgEngagement < 5) {
+    alerts.push({
+      type: 'info',
+      message: 'Campaign engagement below average. Consider A/B testing new formats.',
+      priority: 'low',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  return alerts;
+}

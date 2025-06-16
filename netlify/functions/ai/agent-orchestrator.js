@@ -1,0 +1,338 @@
+
+// netlify/functions/ai/agent-orchestrator.js
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  try {
+    console.log('🤖 Agent Orchestrator: Starting autonomous scan...');
+
+    // 1. Pull mock or real anomaly stream
+    const anomalyMock = [
+      {
+        id: 'act-6',
+        type: 'Customer Service',
+        message: 'Spike in checkout failures detected',
+        severity: 'Critical',
+        playbookId: 'ecommerce-api-optimize-v2',
+        confidence: 0.94
+      },
+      {
+        id: 'act-7',
+        type: 'Performance',
+        message: 'API response time increased by 40%',
+        severity: 'Warning',
+        playbookId: 'performance-optimization-v1',
+        confidence: 0.87
+      }
+    ];
+
+    const results = [];
+
+    for (const anomaly of anomalyMock) {
+      // 2. Simulate GPT analysis
+      const gptAnalysis = {
+        action: 'Execute Playbook',
+        playbookId: anomaly.playbookId,
+        reason: `AI detected ${anomaly.type.toLowerCase()} issue: ${anomaly.message}`,
+        confidence: anomaly.confidence,
+        recommendedActions: [
+          'Scale API resources',
+          'Clear cache layers',
+          'Optimize database queries'
+        ]
+      }
+      // 3. Log AI decision
+      await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/log/audit-trail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionType: 'ai_analysis_completed',
+          actor: 'agent_orchestrator',
+          confidence: gptAnalysis.confidence,
+          notes: gptAnalysis.reason,
+          context: {
+            anomaly_id: anomaly.id,
+            recommended_action: gptAnalysis.action,
+            playbook_id: gptAnalysis.playbookId
+          }
+        })
+      });
+
+      // 4. Execute playbook if confidence is high enough
+      if (gptAnalysis.confidence > 0.8 && gptAnalysis.action === 'Execute Playbook') {
+        try {
+          const playbookResponse = await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/ai/execute-playbook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              playbookId: gptAnalysis.playbookId,
+              steps: gptAnalysis.recommendedActions,
+              executedBy: 'agent_orchestrator',
+              context: {
+                trigger: 'autonomous_detection',
+                anomaly: anomaly,
+                confidence: gptAnalysis.confidence
+              }
+            })
+          });
+
+          const playbookResult = await playbookResponse.json();
+
+          // 5. Send notification
+          await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/notify/webhook-dispatcher`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'Autonomous Playbook Execution',
+              severity: anomaly.severity,
+              message: `AI automatically executed ${gptAnalysis.playbookId} due to ${anomaly.message}`,
+              actor: 'AI_Agent_Orchestrator',
+              context: {
+                playbookId: gptAnalysis.playbookId,
+                confidence: gptAnalysis.confidence,
+                anomaly_id: anomaly.id,
+                execution_result: playbookResult.status
+              }
+            })
+          });
+
+          results.push({
+            anomaly_id: anomaly.id,
+            action_taken: 'playbook_executed',
+            playbook_id: gptAnalysis.playbookId,
+            confidence: gptAnalysis.confidence,
+            execution_status: playbookResult.status
+          });
+
+        } catch (executionError) {
+          console.error('❌ Playbook execution failed:', executionError);
+          
+          // Log failure
+          await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/log/audit-trail`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              actionType: 'playbook_execution_failed',
+              actor: 'agent_orchestrator',
+              confidence: 0,
+              notes: `Failed to execute ${gptAnalysis.playbookId}: ${executionError.message}`,
+              context: { anomaly_id: anomaly.id, error: executionError.message }
+            })
+          });
+
+          results.push({
+            anomaly_id: anomaly.id,
+            action_taken: 'execution_failed',
+            error: executionError.message
+          });
+        }
+      } else {
+        // Log that no action was taken
+        await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/log/audit-trail`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actionType: 'ai_analysis_no_action',
+            actor: 'agent_orchestrator',
+            confidence: gptAnalysis.confidence,
+            notes: `Confidence too low or no action recommended for ${anomaly.type}`,
+            context: { anomaly_id: anomaly.id, threshold: 0.8 }
+          })
+        });
+
+        results.push({
+          anomaly_id: anomaly.id,
+          action_taken: 'none',
+          reason: 'confidence_too_low_or_no_action_recommended'
+        });
+      }
+    }
+
+    console.log('✅ Agent Orchestrator: Scan completed');
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        status: 'autonomous_scan_completed',
+        timestamp: new Date().toISOString(),
+        anomalies_processed: anomalyMock.length,
+        actions_taken: results.filter(r => r.action_taken === 'playbook_executed').length,
+        results
+      })
+    }
+  } catch (error) {
+    console.error('❌ Agent Orchestrator Error:', error);
+
+    // Log system error
+    try {
+      await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/log/audit-trail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionType: 'system_error',
+          actor: 'agent_orchestrator',
+          confidence: 0,
+          notes: `Agent orchestrator system error: ${error.message}`,
+          context: { error_type: 'system_failure' }
+        })
+      });
+    } catch (logError) {
+      console.error('❌ Failed to log system error:', logError);
+    }
+
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: 'agent_orchestrator_failed',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }
+}
+const fetch = require('node-fetch');
+
+exports.handler = async (event, context) => {
+  try {
+    console.log('🤖 GPT Agent Orchestrator - Starting Analysis');
+    
+    // 1. Pull mock or real anomaly stream
+    const anomalyMock = [
+      {
+        id: 'act-6',
+        type: 'Customer Service',
+        message: 'Spike in checkout failures detected',
+        severity: 'Critical',
+        playbookId: 'ecommerce-api-optimize-v2',
+        confidence: 0.94,
+        timestamp: new Date().toISOString()
+      },
+      {
+        id: 'act-7',
+        type: 'Performance',
+        message: 'Server response time degraded',
+        severity: 'High',
+        playbookId: 'performance-optimization-v1',
+        confidence: 0.87,
+        timestamp: new Date().toISOString()
+      }
+    ];
+
+    // 2. Simulate GPT Analysis
+    const gptSimulatedResponse = {
+      action: 'Execute Playbook',
+      playbookId: anomalyMock[0].playbookId,
+      reason: 'AI detected 15% checkout failure increase. Immediate action required.',
+      confidence: 0.94,
+      priority: 'Critical',
+      estimatedImpact: 'High',
+      recommendations: [
+        'Execute immediate cache flush',
+        'Scale API servers',
+        'Alert engineering team'
+      ]
+    }
+    console.log('🧠 GPT Analysis:', gptSimulatedResponse);
+
+    // 3. Auto-execute if confidence > 90%
+    if (gptSimulatedResponse.action === 'Execute Playbook' && gptSimulatedResponse.confidence > 0.90) {
+      console.log('🚀 Auto-executing playbook:', gptSimulatedResponse.playbookId);
+      
+      try {
+        const executeUrl = `${process.env.URL || 'http://localhost:8888'}/.netlify/functions/ai/execute-playbook`;
+        const res = await fetch(executeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            playbookId: gptSimulatedResponse.playbookId,
+            executedBy: 'GPT-Autonomous-Agent',
+            steps: [
+              { title: 'Trigger Auto-Scaling', type: 'System', status: 'pending' },
+              { title: 'Flush Redis Cache', type: 'System', status: 'pending' },
+              { title: 'Notify Engineering Team', type: 'Human', status: 'pending' },
+              { title: 'Monitor Recovery Metrics', type: 'System', status: 'pending' }
+            ],
+            metadata: {
+              triggeredBy: 'AI-Agent',
+              anomalyDetected: anomalyMock[0],
+              gptAnalysis: gptSimulatedResponse,
+              executionTime: new Date().toISOString()
+            }
+          })
+        });
+
+        const executionResult = await res.json();
+        console.log('✅ Playbook execution result:', executionResult);
+
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            status: 'GPT Agent Executed Successfully',
+            action: 'playbook_executed',
+            playbookId: gptSimulatedResponse.playbookId,
+            confidence: gptSimulatedResponse.confidence,
+            anomaliesProcessed: anomalyMock.length,
+            executionResult,
+            timestamp: new Date().toISOString()
+          })
+        }
+      } catch (executeError) {
+        console.error('❌ Playbook execution failed:', executeError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({
+            status: 'Execution Failed',
+            error: executeError.message,
+            analysis: gptSimulatedResponse
+          })
+        }
+      }
+    }
+
+    // 4. Low confidence - flag for human review
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        status: 'Analysis Complete - Human Review Required',
+        action: 'human_review_required',
+        confidence: gptSimulatedResponse.confidence,
+        analysis: gptSimulatedResponse,
+        anomalies: anomalyMock,
+        reason: 'Confidence below auto-execution threshold (90%)',
+        timestamp: new Date().toISOString()
+      })
+    }
+  } catch (err) {
+    console.error('❌ GPT Agent Error:', err);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        status: 'GPT Agent Error',
+        error: err.message,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }
+}

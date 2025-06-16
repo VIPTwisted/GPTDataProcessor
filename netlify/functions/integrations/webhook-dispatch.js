@@ -1,0 +1,133 @@
+
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    }
+  }
+
+  try {
+    const { eventType, payload } = JSON.parse(event.body || '{}');
+
+    if (!eventType) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'eventType is required' })
+      }
+    }
+
+    // Webhook URL configuration - in production, store in environment variables
+    const webhookURLs = {
+      'rep-joined': process.env.ZAPIER_REP_JOINED_WEBHOOK || 'https://hooks.zapier.com/hooks/catch/123456/abcde1/',
+      'course-completed': process.env.ZAPIER_COURSE_COMPLETED_WEBHOOK || 'https://hooks.zapier.com/hooks/catch/123456/abcde2/',
+      'ai-alert': process.env.SLACK_AI_ALERT_WEBHOOK || 'https://hooks.slack.com/services/XXXXX/XXXXX/XXXXX',
+      'sale-completed': process.env.ZAPIER_SALE_WEBHOOK || 'https://hooks.zapier.com/hooks/catch/123456/abcde3/',
+      'tier-upgraded': process.env.ZAPIER_TIER_WEBHOOK || 'https://hooks.zapier.com/hooks/catch/123456/abcde4/',
+      'playbook-executed': process.env.ZAPIER_PLAYBOOK_WEBHOOK || 'https://hooks.zapier.com/hooks/catch/123456/abcde5/',
+      'anomaly-detected': process.env.SLACK_ANOMALY_WEBHOOK || 'https://hooks.slack.com/services/XXXXX/XXXXX/XXXXX'
+    }
+    const url = webhookURLs[eventType];
+    if (!url) {
+      return {
+        statusCode: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: 'No webhook configured for event type',
+          eventType,
+          availableEvents: Object.keys(webhookURLs)
+        })
+      }
+    }
+
+    // Enhanced payload with metadata
+    const enhancedPayload = {
+      ...payload,
+      eventType,
+      timestamp: new Date().toISOString(),
+      source: 'ToyParty_Gemini_OS',
+      version: '1.0',
+      id: `${eventType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    // Send webhook
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'User-Agent': 'ToyParty-Gemini-OS/1.0'
+      },
+      body: JSON.stringify(enhancedPayload),
+      timeout: 10000
+    });
+
+    const success = response.ok;
+    const responseText = await response.text().catch(() => 'No response body');
+
+    // Log to audit trail
+    await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/log/audit-trail`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actionType: 'webhook_dispatched',
+        actor: 'webhook_dispatcher',
+        confidence: success ? 1.0 : 0.3,
+        notes: `Webhook ${eventType} ${success ? 'sent successfully' : 'failed'} to external system`,
+        context: { 
+          eventType, 
+          webhookUrl: url.replace(/\/[^\/]+$/, '/***'), // mask sensitive parts
+          success,
+          responseStatus: response.status,
+          payloadSize: JSON.stringify(enhancedPayload).length
+        }
+      })
+    }).catch(err => console.log('Audit logging failed:', err.message));
+
+    console.log(`🔗 Webhook ${eventType}: ${success ? 'SUCCESS' : 'FAILED'} (${response.status})`);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        status: success ? 'Webhook sent successfully' : 'Webhook failed',
+        eventType,
+        webhookResponse: {
+          status: response.status,
+          ok: response.ok,
+          body: responseText.substring(0, 200) // limit response size
+        },
+        payloadId: enhancedPayload.id
+      })
+    }
+  } catch (error) {
+    console.error('❌ Webhook dispatch error:', error);
+
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Webhook dispatch failed',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }
+}

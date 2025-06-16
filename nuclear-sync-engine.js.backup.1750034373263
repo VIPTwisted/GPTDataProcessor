@@ -1,0 +1,39 @@
+const { execSync } = require('child_process');
+const fs = require('fs');
+
+console.log('💥 NUCLEAR SYNC ENGINE STARTING...');
+
+async function nuclearSync() {
+  try {
+    // Fix git locks first
+    console.log('🔐 Fixing git locks...');
+    if (fs.existsSync('fix-git-locks.js')) {
+      execSync('node fix-git-locks.js', { stdio: 'inherit' });
+    }
+
+    // Validate secrets
+    console.log('🔐 Validating secrets...');
+    if (fs.existsSync('validate-all-secrets.js')) {
+      execSync('node validate-all-secrets.js', { stdio: 'inherit' });
+    }
+
+    // Run the main sync
+    console.log('🚀 Running GitHub sync...');
+    if (fs.existsSync('sync-gpt-to-github.js')) {
+      execSync('node sync-gpt-to-github.js --sync', { stdio: 'inherit' });
+    } else {
+      console.error('❌ sync-gpt-to-github.js not found!');
+    }
+
+    console.log('✅ Nuclear sync completed!');
+  } catch (error) {
+    console.error('❌ Nuclear sync failed:', error.message);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  nuclearSync();
+}
+
+module.exports = { nuclearSync };

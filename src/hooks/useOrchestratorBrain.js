@@ -1,0 +1,112 @@
+
+// src/hooks/useOrchestratorBrain.js
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+
+export const useOrchestratorBrain = () => {
+  const { secureApi } = useAuth();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [lastDecision, setLastDecision] = useState(null);
+  const [error, setError] = useState(null);
+
+  const requestDecision = async (module, metrics, context, availablePlaybooks = []) => {
+    setIsAnalyzing(true);
+    setError(null);
+    
+    try {
+      console.log(`🧠 Requesting AI decision for ${module} module...`);
+      
+      const response = await secureApi('/.netlify/functions/brain/orchestrator-brain', {
+        method: 'POST',
+        body: JSON.stringify({
+          module,
+          metrics,
+          context,
+          availablePlaybooks
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setLastDecision({
+          ...result,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`✅ AI decision received:`, result.decision.recommendation);
+        return result;
+      } else {
+        throw new Error(result.error || 'Failed to get AI decision');
+      }
+      
+    } catch (err) {
+      console.error('🚨 Orchestrator Brain Error:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+  // Convenience method for finance module
+  const analyzeFinanceMetrics = async (metrics, context = '') => {
+    const playbooks = [
+      { id: 'expense-audit-v1', title: 'Emergency Expense Audit' },
+      { id: 'budget-freeze-v1', title: 'Department Budget Freeze' },
+      { id: 'cash-flow-recovery-v1', title: 'Cash Flow Recovery Protocol' }
+    ];
+    
+    return requestDecision('Finance', metrics, context, playbooks);
+  }
+  // Convenience method for operations module  
+  const analyzeOpsMetrics = async (metrics, context = '') => {
+    const playbooks = [
+      { id: 'scale-servers-v1', title: 'Auto-Scale Server Instances' },
+      { id: 'performance-optimize-v1', title: 'Performance Optimization Protocol' },
+      { id: 'error-investigation-v1', title: 'Error Rate Investigation' }
+    ];
+    
+    return requestDecision('Operations', metrics, context, playbooks);
+  }
+  // Convenience method for HR module
+  const analyzeHRMetrics = async (metrics, context = '') => {
+    const playbooks = [
+      { id: 'retention-strategy-v1', title: 'Employee Retention Strategy' },
+      { id: 'engagement-boost-v1', title: 'Engagement Improvement Protocol' },
+      { id: 'satisfaction-survey-v1', title: 'Emergency Satisfaction Survey' }
+    ];
+    
+    return requestDecision('HR', metrics, context, playbooks);
+  }
+  // Convenience method for marketing module
+  const analyzeMarketingMetrics = async (metrics, context = '') => {
+    const playbooks = [
+      { id: 'campaign-optimization-v1', title: 'Campaign ROI Optimization' },
+      { id: 'audience-retargeting-v1', title: 'Audience Retargeting Protocol' },
+      { id: 'budget-reallocation-v1', title: 'Marketing Budget Reallocation' }
+    ];
+    
+    return requestDecision('Marketing', metrics, context, playbooks);
+  }
+  // Convenience method for ecommerce module
+  const analyzeEcommerceMetrics = async (metrics, context = '') => {
+    const playbooks = [
+      { id: 'cart-abandonment-v1', title: 'Cart Abandonment Recovery' },
+      { id: 'conversion-optimization-v1', title: 'Conversion Rate Optimization' },
+      { id: 'inventory-rebalance-v1', title: 'Inventory Rebalancing Protocol' }
+    ];
+    
+    return requestDecision('Ecommerce', metrics, context, playbooks);
+  }
+  return {
+    requestDecision,
+    analyzeFinanceMetrics,
+    analyzeOpsMetrics,
+    analyzeHRMetrics,
+    analyzeMarketingMetrics,
+    analyzeEcommerceMetrics,
+    isAnalyzing,
+    lastDecision,
+    error
+  }
+}

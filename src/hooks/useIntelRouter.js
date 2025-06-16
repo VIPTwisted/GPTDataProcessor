@@ -1,0 +1,47 @@
+
+import { useState } from 'react';
+
+export const useIntelRouter = () => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchIntel = async ({ type, params }) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log(`🔍 Fetching intelligence: ${type}`, params);
+      
+      const res = await fetch('/.netlify/functions/data/intel-router', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, params }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const json = await res.json();
+      
+      if (json.success === false) {
+        throw new Error(json.error || 'Intelligence fetch failed');
+      }
+
+      setResult(json.data || json);
+      console.log(`✅ Intelligence fetched: ${type}`, json.data);
+      
+      return json.data || json;
+    } catch (err) {
+      setError(err.message);
+      console.error('❌ Intel Fetch Error:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }
+  return { fetchIntel, loading, result, error }
+}

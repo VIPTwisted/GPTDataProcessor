@@ -1,0 +1,241 @@
+Here are the next set of sophisticated widgets that will populate your main dashboard.
+
+3. Create src/components/widgets/SparklineChart.jsx (New File)
+
+This simple component will display trend data within your cards, leveraging recharts. You'll need to ensure recharts is installed: npm install recharts or yarn add recharts.
+
+JavaScript
+
+// src/components/widgets/SparklineChart.jsx
+import React from 'react';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
+
+const SparklineChart = ({ data, dataKey, strokeColor, width = '100%', height = 50 }) => {
+  return (
+    <ResponsiveContainer width={width} height={height}>
+      <LineChart data={data}>
+        <Line
+          type="monotone"
+          dataKey={dataKey}
+          stroke={strokeColor}
+          strokeWidth={2}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
+
+export default SparklineChart;
+4. Create src/components/widgets/GlobalHealthCard.jsx (New File)
+
+This card provides the overall system health, incorporating AI prediction and performance metrics.
+
+JavaScript
+
+// src/components/widgets/GlobalHealthCard.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import SparklineChart from './SparklineChart';
+import { mockGlobalHealth, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+
+const GlobalHealthCard = ({ onClick }) => {
+  const { status, description, predictedStatus, predictionConfidence, performanceMetrics, trendData } = mockGlobalHealth;
+
+  const statusColorClass = getStatusColor(status);
+  const predictionColorClass = getStatusColor(predictedStatus);
+
+  return (
+    <AnimatedCard
+      title="Global System Health"
+      subTitle="AI-Powered Operational Status"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-2" // Adjust grid span as needed
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColorClass}`}>
+            {getStatusIcon(status)} {status}
+          </span>
+          <p className="ml-3 text-gray-700 dark:text-gray-300 text-lg font-medium">{description}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Current Uptime</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{performanceMetrics.uptime}%</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Avg. Response Time</p>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{performanceMetrics.response_time_avg} ms</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Error Rate</p>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{performanceMetrics.error_rate}%</p>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+          <span className="mr-2">🧠</span> AI Prediction:
+        </h4>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">24-Hour Forecast</p>
+            <p className={`text-xl font-bold ${predictionColorClass}`}>
+              {getStatusIcon(predictedStatus)} {predictedStatus}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Confidence</p>
+            <p className="text-xl font-bold text-gray-800 dark:text-gray-200">{(predictionConfidence * 100).toFixed(0)}%</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Uptime Trend (Last 7 Days)</p>
+          <SparklineChart
+            data={trendData}
+            dataKey="value"
+            strokeColor={status === 'GREEN' ? '#10B981' : (status === 'YELLOW' ? '#F59E0B' : '#EF4444')}
+          />
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default GlobalHealthCard;
+5. Create src/components/widgets/AIPrescriptiveActions.jsx (New File)
+
+This widget will display the AI-generated prescriptive actions and playbooks.
+
+JavaScript
+
+// src/components/widgets/AIPrescriptiveActions.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import { mockAIPrescriptiveActions, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+
+const AIPrescriptiveActions = ({ onClick }) => {
+  const topActions = mockAIPrescriptiveActions.slice(0, 3); // Display top 3 for overview
+
+  const handleActionClick = (actionId) => {
+    // In a real scenario, this would open a modal with playbook details
+    // or navigate to a specific action page.
+    console.log(`AI Action Clicked: ${actionId}`);
+    if (onClick) onClick(); // Propagate click if card itself is clickable
+  };
+
+  return (
+    <AnimatedCard
+      title="AI Prescriptive Actions"
+      subTitle="Prioritized & Actionable Playbooks"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-2" // Adjust grid span
+    >
+      <div className="space-y-4">
+        {topActions.length > 0 ? (
+          topActions.map((action) => (
+            <div
+              key={action.id}
+              className="flex items-start bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+              onClick={() => handleActionClick(action.id)}
+            >
+              <div className={`flex-shrink-0 mr-3 mt-1 text-lg ${getStatusColor(action.priority)}`}>
+                {getStatusIcon(action.priority === 'Critical' ? 'RED' : (action.priority === 'High' ? 'ORANGE' : 'YELLOW'))}
+              </div>
+              <div className="flex-grow">
+                <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  {action.title}
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-tight mb-1">
+                  {action.description}
+                </p>
+                <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                  <span>Status: <span className="font-medium">{action.status}</span></span>
+                  <span>ETA: <span className="font-medium">{action.eta}</span></span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">No pressing AI actions at this moment. All clear!</p>
+        )}
+      </div>
+      {topActions.length > 0 && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => console.log('View All AI Actions')} // Placeholder for navigation
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            View All ({mockAIPrescriptiveActions.length}) AI Actions & Playbooks &rarr;
+          </button>
+        </div>
+      )}
+    </AnimatedCard>
+  );
+};
+
+export default AIPrescriptiveActions;
+6. Create src/components/widgets/FinancialPulseCard.jsx (New File)
+
+This widget gives the CEO a quick glance at the company's financial health.
+
+JavaScript
+
+// src/components/widgets/FinancialPulseCard.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import SparklineChart from './SparklineChart';
+import { mockFinancialPulse, formatCurrency, getStatusColor } from '../../data/mockGlobalData';
+
+const FinancialPulseCard = ({ onClick }) => {
+  const { netProfit, cashFlow, budgetAdherenceScore, budgetVariance, trends } = mockFinancialPulse;
+
+  const budgetStatus = budgetAdherenceScore >= 0.98 ? 'GREEN' : (budgetAdherenceScore >= 0.90 ? 'YELLOW' : 'RED');
+  const budgetStatusColorClass = getStatusColor(budgetStatus);
+
+  return (
+    <AnimatedCard
+      title="Unified Financial Pulse"
+      subTitle="Real-time Revenue & Liquidity Overview"
+      onClick={onClick}
+      className="col-span-1" // Adjust grid span
+    >
+      <div className="mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">Current Net Profit (This Month)</p>
+        <p className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{formatCurrency(netProfit)}</p>
+        <SparklineChart
+          data={trends.netProfit.map(val => ({ value: val }))} // Recharts needs object in array
+          dataKey="value"
+          strokeColor="#10B981" // Green
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Cash Flow</p>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(cashFlow)}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Budget Adherence</p>
+          <p className={`text-xl font-semibold ${budgetStatusColorClass}`}>
+            {(budgetAdherenceScore * 100).toFixed(1)}% {budgetVariance !== 0 && `(${budgetVariance > 0 ? '+' : ''}${(budgetVariance * 100).toFixed(1)}%)`}
+          </p>
+        </div>
+        <div className="md:col-span-2 mt-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Cash Flow Trend</p>
+          <SparklineChart
+            data={trends.cashFlow.map(val => ({ value: val }))}
+            dataKey="value"
+            strokeColor="#3B82F6" // Blue
+          />
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default FinancialPulseCard;

@@ -1,0 +1,80 @@
+
+const PDFDocument = require('pdfkit');
+
+exports.handler = async (event, context) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const { name, course, completionDate, brandId = 'toyparty' } = JSON.parse(event.body);
+    
+    // Create PDF document
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape'
+    });
+    
+    const buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
+    
+    // Certificate design
+    doc.fontSize(36)
+       .fillColor('#2563eb')
+       .text('Certificate of Completion', 100, 100, { align: 'center' });
+    
+    doc.fontSize(24)
+       .fillColor('#1f2937')
+       .text('This certifies that', 100, 180, { align: 'center' });
+    
+    doc.fontSize(32)
+       .fillColor('#059669')
+       .text(name, 100, 220, { align: 'center' });
+    
+    doc.fontSize(20)
+       .fillColor('#1f2937')
+       .text('has successfully completed', 100, 280, { align: 'center' });
+    
+    doc.fontSize(28)
+       .fillColor('#dc2626')
+       .text(course, 100, 320, { align: 'center' });
+    
+    doc.fontSize(16)
+       .fillColor('#6b7280')
+       .text(`Completion Date: ${completionDate || new Date().toDateString()}`, 100, 380, { align: 'center' });
+    
+    doc.fontSize(14)
+       .fillColor('#9ca3af')
+       .text(`Powered by Gemini OS - ${brandId.toUpperCase()}`, 100, 420, { align: 'center' });
+    
+    // Add decorative elements
+    doc.rect(50, 50, doc.page.width - 100, doc.page.height - 100)
+       .stroke('#2563eb');
+    
+    doc.end();
+    
+    return new Promise((resolve) => {
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve({
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${name}-${course}-certificate.pdf"`
+          },
+          body: pdfBuffer.toString('base64'),
+          isBase64Encoded: true
+        });
+      });
+    });
+    
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Failed to generate certificate', details: error.message })
+    };
+  }
+};

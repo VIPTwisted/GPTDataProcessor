@@ -1,0 +1,39 @@
+// Universal Secret Loader - Handles all secret management;
+const fs = require('fs');
+
+function getNetlifySecrets() {
+  const secrets = {
+    NETLIFY_TOKEN: process.env.NETLIFY_TOKEN || process.env.NETLIFY_AUTH_TOKEN,
+    NETLIFY_SITE_ID: process.env.NETLIFY_SITE_ID
+  }
+  if (!secrets.NETLIFY_TOKEN) {
+    console.log('⚠️ NETLIFY_TOKEN not found in environment');
+  }
+
+  return secrets;
+}
+
+function getGitHubToken() {
+  return process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+}
+
+function validateAllSecrets() {
+  const github = getGitHubToken();
+  const netlify = getNetlifySecrets();
+
+  console.log('🔐 SECRET VALIDATION:');
+  console.log(`✅ GitHub Token: ${github ? 'Found' : 'Missing'}`);
+  console.log(`✅ Netlify Token: ${netlify.NETLIFY_TOKEN ? 'Found' : 'Missing'}`);
+  console.log(`✅ Netlify Site ID: ${netlify.NETLIFY_SITE_ID ? 'Found' : 'Missing'}`);
+
+  return {
+    github: !!github,
+    netlify: !!netlify.NETLIFY_TOKEN
+  }
+}
+
+module.exports = {
+  getNetlifySecrets,
+  getGitHubToken,
+  validateAllSecrets
+}

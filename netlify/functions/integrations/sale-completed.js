@@ -1,0 +1,116 @@
+
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    }
+  }
+
+  try {
+    const { 
+      saleId, 
+      repId, 
+      repName, 
+      customerName, 
+      amount, 
+      commission, 
+      products, 
+      partyType 
+    } = JSON.parse(event.body || '{}');
+
+    if (!saleId || !repId || !amount) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'saleId, repId, and amount are required' })
+      }
+    }
+
+    // Trigger webhook dispatch for sale completion
+    const webhookResponse = await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/integrations/webhook-dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType: 'sale-completed',
+        payload: { 
+          saleId,
+          repId,
+          repName: repName || `Rep ${repId}`,
+          customerName: customerName || 'Customer',
+          amount: parseFloat(amount),
+          commission: commission || (parseFloat(amount) * 0.25), // 25% default commission
+          products: products || [],
+          partyType: partyType || 'Home Party',
+          saleDate: new Date().toISOString(),
+          payoutStatus: 'pending',
+          payoutDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
+          tierProgress: calculateTierProgress(amount),
+          milestoneReached: checkMilestones(amount)
+        }
+      })
+    });
+
+    const webhookResult = await webhookResponse.json();
+
+    console.log('💰 Sale Completed:', { saleId, repId, amount });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        status: 'Sale completion processed',
+        saleId,
+        repId,
+        amount,
+        webhookTriggered: webhookResponse.ok,
+        webhookResult: webhookResult
+      })
+    }
+  } catch (error) {
+    console.error('❌ Sale completion error:', error);
+
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Sale completion processing failed',
+        message: error.message 
+      })
+    }
+  }
+}
+function calculateTierProgress(amount) {
+  const tierThresholds = {
+    'Gold': 1000,
+    'Platinum': 5000,
+    'Diamond': 10000
+  }
+  for (const [tier, threshold] of Object.entries(tierThresholds)) {
+    if (amount >= threshold) {
+      return { currentTier: tier, progress: 100 }
+    }
+  }
+  
+  return { currentTier: 'Starter', progress: (amount / 1000) * 100 }
+}
+
+function checkMilestones(amount) {
+  const milestones = [100, 500, 1000, 2500, 5000, 10000];
+  return milestones.filter(milestone => amount >= milestone);
+}

@@ -1,0 +1,155 @@
+ DYNAMIC 3D GEOSPATIAL OVERLAYS
+(Live Location Risk, Sales Heat, Predictive Disruption Mock)
+This transforms your GeospatialMapWidget from static pins to a layered, toggleable visualization system, including:
+
+🔥 Real-time sales heatmap overlay
+
+🛑 Predictive risk projection (mocked storm/traffic/sentiment disruptions)
+
+📦 Inventory or cloud health overlays
+
+⏳ Future-ready for Mapbox/Deck.gl integration
+
+✅ Step 1: Update mockGlobalData.js with Overlay Metadata
+Add the following under the mockGeospatialData section:
+
+js
+Copy
+Edit
+export const mockOverlayLayers = {
+  salesHeat: {
+    label: 'Live Sales Heatmap',
+    data: [
+      { id: 'hartford', intensity: 0.8 },
+      { id: 'orange', intensity: 0.5 },
+      { id: 'southington', intensity: 0.3 },
+    ]
+  },
+  predictiveRisk: {
+    label: 'Predicted Regional Disruption',
+    data: [
+      { id: 'southington', reason: 'Storm Front', risk: 0.6 },
+      { id: 'cloud-west', reason: 'Latency Spike', risk: 0.7 }
+    ]
+  }
+};
+✅ Step 2: Replace GeospatialMapWidget.jsx with Upgraded Version
+jsx
+Copy
+Edit
+// src/components/widgets/GeospatialMapWidget.jsx
+import React, { useState } from 'react';
+import AnimatedCard from './AnimatedCard';
+import {
+  mockGeospatialData,
+  mockOverlayLayers,
+  getStatusColor,
+  getStatusIcon
+} from '../../data/mockGlobalData';
+
+const GeospatialMapWidget = ({ onClick }) => {
+  const [activeOverlay, setActiveOverlay] = useState('none');
+
+  const getOverlayIntensity = (locationId) => {
+    if (activeOverlay === 'salesHeat') {
+      const found = mockOverlayLayers.salesHeat.data.find((d) => d.id === locationId);
+      return found ? found.intensity : 0;
+    }
+    return 0;
+  };
+
+  const getOverlayRisk = (locationId) => {
+    if (activeOverlay === 'predictiveRisk') {
+      return mockOverlayLayers.predictiveRisk.data.find((r) => r.id === locationId);
+    }
+    return null;
+  };
+
+  return (
+    <AnimatedCard
+      title="Geospatial Intelligence"
+      subTitle="Heatmaps & Predictive Risk Layers"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-3 h-96 relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-slate-800 rounded-lg p-4">
+        <svg viewBox="0 0 800 400" className="absolute inset-0 w-full h-full opacity-10 dark:opacity-20">
+          <path fill="#a5b4fc" d="M400 0 C150 100 150 300 400 400 C650 300 650 100 400 0 Z" />
+        </svg>
+
+        {/* Overlay Toggle Controls */}
+        <div className="absolute top-2 right-4 z-20 bg-white dark:bg-gray-900/90 rounded-lg shadow-md flex gap-2 px-4 py-2 text-xs font-medium">
+          <button
+            className={`px-2 py-1 rounded ${activeOverlay === 'none' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
+            onClick={() => setActiveOverlay('none')}
+          >None</button>
+          <button
+            className={`px-2 py-1 rounded ${activeOverlay === 'salesHeat' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
+            onClick={() => setActiveOverlay('salesHeat')}
+          >Sales Heat</button>
+          <button
+            className={`px-2 py-1 rounded ${activeOverlay === 'predictiveRisk' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
+            onClick={() => setActiveOverlay('predictiveRisk')}
+          >Predictive Risk</button>
+        </div>
+
+        {/* Pins with Overlay Rendering */}
+        {mockGeospatialData.map((loc) => {
+          const pos = {
+            hartford: { top: '30%', left: '42%' },
+            orange: { top: '68%', left: '32%' },
+            manchester: { top: '38%', left: '63%' },
+            southington: { top: '55%', left: '41%' },
+            warehouse: { top: '48%', left: '48%' },
+            'cloud-east': { top: '38%', left: '80%' },
+            'cloud-west': { top: '64%', left: '8%' }
+          }[loc.id] || { top: '50%', left: '50%' };
+
+          const statusClass = getStatusColor(loc.status);
+          const intensity = getOverlayIntensity(loc.id);
+          const risk = getOverlayRisk(loc.id);
+
+          return (
+            <div
+              key={loc.id}
+              className="absolute flex flex-col items-center"
+              style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
+            >
+              {/* Overlay Halo */}
+              {intensity > 0 && (
+                <div
+                  className="absolute rounded-full opacity-40 animate-ping"
+                  style={{
+                    width: `${40 + intensity * 80}px`,
+                    height: `${40 + intensity * 80}px`,
+                    backgroundColor: 'rgba(255, 102, 0, 0.5)'
+                  }}
+                />
+              )}
+
+              {risk && (
+                <div className="absolute -top-8 bg-red-600 text-white px-2 py-1 text-[10px] rounded shadow-lg z-10">
+                  ⚠️ {risk.reason} ({Math.round(risk.risk * 100)}% Risk)
+                </div>
+              )}
+
+              <span className={`text-2xl ${statusClass}`}>{getStatusIcon(loc.status)}</span>
+              <span className="text-xs mt-1 font-semibold text-gray-700 dark:text-gray-200">
+                {loc.name}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default GeospatialMapWidget;
+✅ Result:
+You now have a layer-toggling, real-time risk visualization system:
+
+Overlay	Features
+🔥 Sales Heat	Expanding orange rings based on real-time revenue
+🛑 Predictive Risk	Flags with reason + percent likelihood
+🧠 Future-Ready	Can plug into Mapbox, Deck.gl, or Leaflet seamlessly

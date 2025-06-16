@@ -1,0 +1,80 @@
+
+const { checkFeatureAccess, validateTierUpgrade, TIER_FEATURES } = require('../../../logic/gpt-tiers');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const { userTier, agent, prompt, userId } = JSON.parse(event.body);
+
+    // Validate tier access
+    if (!checkFeatureAccess(userTier, agent)) {
+      const upgrade = validateTierUpgrade(userTier, agent);
+      
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          error: `❌ Tier ${userTier} cannot access ${agent}`,
+          feature: TIER_FEATURES[agent],
+          upgradeTiers: upgrade.upgradeTiers,
+          upgradeRequired: true
+        })
+      };
+    }
+
+    // Log access for audit trail
+    const auditLog = {
+      timestamp: new Date().toISOString(),
+      userId,
+      userTier,
+      agent,
+      action: 'gpt-access-granted',
+      prompt: prompt?.substring(0, 100) + '...'
+    };
+
+    // Simulate GPT response based on agent type
+    let gptResponse = '';
+    switch (agent) {
+      case 'gpt-basic':
+        gptResponse = `🤖 Basic GPT: I can help with general questions and basic tasks.`;
+        break;
+      case 'gpt-persona':
+        gptResponse = `🎭 Persona GPT: I can simulate different sales personalities and training scenarios.`;
+        break;
+      case 'gpt-sales':
+        gptResponse = `💼 Sales GPT: I can help with objection handling, closing techniques, and live party support.`;
+        break;
+      case 'admin-gpt':
+        gptResponse = `⚡ Admin GPT: I can manage system configurations, user permissions, and technical operations.`;
+        break;
+      default:
+        gptResponse = `🚀 GPT Agent (${agent}): Ready to assist with ${TIER_FEATURES[agent] || 'advanced features'}.`;
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        success: true,
+        response: gptResponse,
+        agent,
+        userTier,
+        auditLog,
+        timestamp: new Date().toISOString()
+      })
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Internal server error', details: error.message })
+    };
+  }
+};

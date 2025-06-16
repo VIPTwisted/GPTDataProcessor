@@ -1,0 +1,43 @@
+
+// GPT Subscription Tier System
+export const GPT_TIERS = {
+  Starter: ['gpt-basic', 'lms-trainer'],
+  Gold: ['gpt-basic', 'gpt-persona', 'lms-trainer', 'gpt-sales'],
+  Platinum: ['*'], // wildcard access
+  Enterprise: ['*', 'admin-gpt', 'mission-control', 'audit-trail']
+};
+
+export const TIER_FEATURES = {
+  'gpt-basic': 'Basic GPT responses and queries',
+  'gpt-persona': 'Persona-based GPT training and simulation',
+  'lms-trainer': 'LMS training modules and certification',
+  'gpt-sales': 'Sales AI co-pilot and objection handling',
+  'admin-gpt': 'Administrative GPT commands and system control',
+  'mission-control': 'AI Mission Control Panel access',
+  'audit-trail': 'Full audit trail and activity monitoring'
+};
+
+export const checkFeatureAccess = (tier, feature) => {
+  if (!GPT_TIERS[tier]) return false;
+  return GPT_TIERS[tier].includes('*') || GPT_TIERS[tier].includes(feature);
+};
+
+export const getTierFeatures = (tier) => {
+  const features = GPT_TIERS[tier] || [];
+  if (features.includes('*')) {
+    return Object.keys(TIER_FEATURES);
+  }
+  return features;
+};
+
+export const validateTierUpgrade = (currentTier, requestedFeature) => {
+  const availableTiers = Object.keys(GPT_TIERS);
+  const upgradeTiers = availableTiers.filter(tier => 
+    checkFeatureAccess(tier, requestedFeature)
+  );
+  
+  return {
+    hasAccess: checkFeatureAccess(currentTier, requestedFeature),
+    upgradeTiers: upgradeTiers.filter(tier => tier !== currentTier)
+  };
+};

@@ -1,0 +1,63 @@
+
+const fetch = require('node-fetch');
+
+exports.handler = async (event, context) => {
+  try {
+    const { content, difficulty = 'medium', questionCount = 3 } = JSON.parse(event.body || '{}');
+
+    const prompt = `
+You are a training assessment specialist. Based on the following course content, create ${questionCount} ${difficulty} difficulty quiz questions.
+
+Content:
+${content}
+
+Create questions that test understanding, application, and retention. Respond in JSON format:
+[
+  {
+    "question": "Clear, specific question text",
+    "choices": ["Option A", "Option B", "Option C", "Option D"],
+    "correct": "A",
+    "explanation": "Brief explanation of why this is correct"
+  }
+]
+
+Make questions practical and relevant to ToyParty business operations.
+`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [{ role: 'system', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 800
+      })
+    });
+
+    const json = await res.json();
+    const quiz = JSON.parse(json.choices[0].message.content);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        quiz,
+        generatedAt: new Date().toISOString(),
+        difficulty,
+        questionCount: quiz.length
+      })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+};

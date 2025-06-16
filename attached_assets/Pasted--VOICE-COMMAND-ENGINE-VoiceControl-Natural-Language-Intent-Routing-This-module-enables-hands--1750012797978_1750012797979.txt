@@ -1,0 +1,137 @@
+🎙️ VOICE COMMAND ENGINE
+(VoiceControl + Natural Language Intent Routing)
+This module enables hands-free control of your dashboard, fulfilling your vision for a voice-enabled command center.
+
+We’ll build:
+
+Real-time microphone listener
+
+Keyword intent recognition (mocked via RegEx/NLP)
+
+Action router (navigates or triggers functions)
+
+Visual indicator that voice is listening
+
+Fully decoupled & composable hook-based architecture
+
+✅ Step 1: Create src/components/system/VoiceCommandEngine.jsx
+jsx
+Copy
+Edit
+// src/components/system/VoiceCommandEngine.jsx
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const getSpeechRecognition = () => {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+};
+
+const parseCommandIntent = (text) => {
+  const cleaned = text.toLowerCase();
+
+  if (/summary|what('|’)s.*health/.test(cleaned)) return 'EXECUTIVE_SUMMARY';
+  if (/show.*actions|ai queue|prescriptive/.test(cleaned)) return 'ACTIONS_VIEW';
+  if (/go.*dashboard|overview/.test(cleaned)) return 'DASHBOARD';
+  if (/dark mode|light mode/.test(cleaned)) return 'TOGGLE_THEME';
+  if (/refresh/.test(cleaned)) return 'REFRESH_VIEW';
+
+  return null;
+};
+
+const VoiceCommandEngine = ({ onToggleTheme, onTriggerSummary }) => {
+  const [isListening, setIsListening] = useState(false);
+  const [lastCommand, setLastCommand] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (err) => {
+      console.warn('Voice recognition error:', err);
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript;
+      setLastCommand(transcript);
+      const intent = parseCommandIntent(transcript);
+
+      switch (intent) {
+        case 'EXECUTIVE_SUMMARY':
+          onTriggerSummary?.();
+          break;
+        case 'ACTIONS_VIEW':
+          navigate('/actions');
+          break;
+        case 'DASHBOARD':
+          navigate('/');
+          break;
+        case 'TOGGLE_THEME':
+          onToggleTheme?.();
+          break;
+        case 'REFRESH_VIEW':
+          window.location.reload();
+          break;
+        default:
+          console.log('No matching voice intent.');
+      }
+    };
+
+    recognition.start();
+
+    return () => recognition.stop();
+  }, [navigate, onToggleTheme, onTriggerSummary]);
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-full shadow-lg text-xs text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${isListening ? 'bg-green-500 animate-ping' : 'bg-gray-400'}`}></span>
+      <span>Voice {isListening ? 'Listening' : 'Idle'}: </span>
+      <span className="italic truncate max-w-[200px]">{lastCommand || 'Say something...'}</span>
+    </div>
+  );
+};
+
+export default VoiceCommandEngine;
+✅ Step 2: Integrate in App.js
+jsx
+Copy
+Edit
+import VoiceCommandEngine from './components/system/VoiceCommandEngine';
+import { useTheme } from './context/ThemeContext';
+import { useRef } from 'react';
+Then inside your <ThemeProvider> return tree:
+
+jsx
+Copy
+Edit
+<VoiceCommandEngine
+  onToggleTheme={toggleTheme}
+  onTriggerSummary={() => {
+    const speak = window.speechSynthesis;
+    if (speak && typeof speak.speak === 'function') {
+      const summary = new SpeechSynthesisUtterance("Your current global status is healthy. No critical anomalies. AI projects 95% stability in the next 24 hours.");
+      speak.speak(summary);
+    }
+  }}
+/>
+✅ Features Activated:
+Voice Command	Action
+“What’s my company’s health?”	Speaks executive summary
+“Show me AI queue” / “Prescriptive actions”	Navigates to /actions
+“Go to dashboard”	Navigates home
+“Toggle dark mode”	Switches theme
+“Refresh”	Reloads view
+
+🧠 Fully Modular:
+You can add more NLP logic or integrate GPT/NLU services later.
+
+You can chain actions to AI-generated playbooks, filters, searches.
+

@@ -1,0 +1,106 @@
+
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  try {
+    const { repId, repName, moduleTitle, moduleId, tier, score, timeSpent } = JSON.parse(event.body || '{}');
+
+    if (!repId || !moduleTitle) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'repId and moduleTitle are required' })
+      };
+    }
+
+    // Trigger webhook dispatch
+    const webhookResponse = await fetch(`${process.env.URL || 'https://toyparty.netlify.app'}/.netlify/functions/integrations/webhook-dispatch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType: 'course-completed',
+        payload: { 
+          repId,
+          repName: repName || `Rep ${repId}`,
+          moduleTitle,
+          moduleId: moduleId || `module_${Date.now()}`,
+          tier: tier || 'Starter',
+          score: score || 100,
+          timeSpent: timeSpent || '15 minutes',
+          completedAt: new Date().toISOString(),
+          certificationEarned: score >= 80,
+          nextRecommendedModule: getNextModule(moduleTitle)
+        }
+      })
+    });
+
+    const webhookResult = await webhookResponse.json();
+
+    // Update rep progress in system (simulate database update)
+    const progressUpdate = {
+      repId,
+      action: 'module_completed',
+      moduleTitle,
+      timestamp: new Date().toISOString(),
+      webhookTriggered: webhookResponse.ok
+    };
+
+    console.log('📚 LMS Completion:', progressUpdate);
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        status: 'LMS completion processed',
+        repId,
+        moduleTitle,
+        webhookTriggered: webhookResponse.ok,
+        webhookResult: webhookResult,
+        progressUpdate
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ LMS completion error:', error);
+
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'LMS completion processing failed',
+        message: error.message 
+      })
+    };
+  }
+};
+
+function getNextModule(completedModule) {
+  const moduleSequence = {
+    'Product Basics': 'Advanced Sales Techniques',
+    'Advanced Sales Techniques': 'Customer Service Excellence',
+    'Customer Service Excellence': 'Leadership Development',
+    'Leadership Development': 'Business Analytics'
+  };
+  
+  return moduleSequence[completedModule] || 'Choose Your Next Adventure';
+}

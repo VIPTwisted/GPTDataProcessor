@@ -1,0 +1,19 @@
+
+import { useAuth } from '../context/AuthContext';
+import { useParams } from 'react-router-dom';
+
+export const useTenantAuth = () => {
+  const { user } = useAuth();
+  const { brandId } = useParams();
+
+  // Admins can access all brands, users can only access their assigned brand
+  const authorized = user && (user.role === 'admin' || user.brandId === brandId);
+  
+  return { 
+    authorized, 
+    brandId, 
+    user,
+    isAdmin: user?.role === 'admin',
+    userBrand: user?.brandId
+  };
+};

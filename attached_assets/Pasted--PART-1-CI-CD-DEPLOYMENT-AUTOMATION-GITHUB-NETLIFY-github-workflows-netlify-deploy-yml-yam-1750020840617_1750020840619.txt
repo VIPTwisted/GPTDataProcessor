@@ -1,0 +1,174 @@
+✅ PART 1: CI/CD DEPLOYMENT AUTOMATION (GITHUB + NETLIFY)
+📄 .github/workflows/netlify-deploy.yml
+yaml
+Copy
+Edit
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app
+        run: npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: ./dist
+          production-branch: main
+          deploy-message: "Automated Netlify Deployment"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          netlify-auth-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          netlify-site-id: ${{ secrets.NETLIFY_SITE_ID }}
+📌 Add your NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID as GitHub Secrets.
+
+✅ PART 2: .env BUILDER CLI TOOL
+📄 /scripts/build-env.js
+js
+Copy
+Edit
+const fs = require('fs');
+
+const env = {
+  BRAND_ID: process.argv[2] || 'toyparty',
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'sk-***',
+  DB_URL: 'https://api.toyparty.com',
+  REBRAND_THEME: 'true'
+};
+
+const out = Object.entries(env).map(([k, v]) => `${k}=${v}`).join('\n');
+fs.writeFileSync('.env', out);
+console.log('✅ .env generated:\n', out);
+✅ Run with: node scripts/build-env.js boldbeauty
+
+✅ PART 3: ROLE ACCESS MATRIX
+📄 /logic/role-access.js
+js
+Copy
+Edit
+export const ROLE_ACCESS = {
+  admin: ['dashboard', 'playbooks', 'lms', 'mission', 'rewards'],
+  rep: ['dashboard', 'lms', 'campaigns', 'store'],
+  guest: ['dashboard']
+};
+
+export const canAccess = (role, section) => ROLE_ACCESS[role]?.includes(section);
+✅ UI Add-On: /components/RoleLock.jsx
+jsx
+Copy
+Edit
+import { useUser } from '../context/AuthContext';
+import { canAccess } from '../logic/role-access';
+
+const RoleLock = ({ section, children }) => {
+  const { role } = useUser();
+  return canAccess(role, section) ? children : null;
+};
+✅ PART 4: BASIC TEST SUITE (JEST)
+📄 /tests/ai-healthcard.test.js
+js
+Copy
+Edit
+import { render } from '@testing-library/react';
+import GlobalHealthCard from '../src/components/widgets/GlobalHealthCard';
+
+test('renders system status', () => {
+  const { getByText } = render(<GlobalHealthCard />);
+  expect(getByText(/Global System Health/)).toBeTruthy();
+});
+✅ Add "test": "jest" to your package.json scripts
+
+✅ PART 5: API DOC VIEWER (Swagger UI)
+📄 /docs/swagger.json (sample)
+json
+Copy
+Edit
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Gemini ToyParty API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/netlify/functions/gpt/agent": {
+      "post": {
+        "summary": "Run GPT Agent",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  }
+}
+✅ Add Swagger UI with:
+
+bash
+Copy
+Edit
+npm install swagger-ui-react
+jsx
+Copy
+Edit
+// views/APIDocView.jsx
+import SwaggerUI from "swagger-ui-react";
+import "swagger-ui-react/swagger-ui.css";
+
+export default () => <SwaggerUI url="/docs/swagger.json" />;
+✅ PART 6: PDF CERTIFICATE EXPORTER (LMS)
+js
+Copy
+Edit
+// netlify/functions/export/pdf-cert.js
+const PDFDocument = require('pdfkit');
+
+exports.handler = async (event) => {
+  const { name, course } = JSON.parse(event.body);
+  const doc = new PDFDocument();
+  const buffers = [];
+
+  doc.text(`Certificate of Completion`);
+  doc.text(`Awarded to: ${name}`);
+  doc.text(`Course: ${course}`);
+  doc.text(`Date: ${new Date().toDateString()}`);
+  doc.end();
+
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/pdf' },
+    body: Buffer.concat(buffers).toString('base64'),
+    isBase64Encoded: true
+  };
+};
+✅ PART 7: INSTALLER WIZARD UI
+jsx
+Copy
+Edit
+// views/InstallerWizard.jsx
+import React from 'react';
+export default () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold mb-4">🛠️ Gemini Setup Wizard</h1>
+    <p>Step 1: Choose brand ID</p>
+    <input className="border p-2 mb-4" placeholder="e.g. toyparty, boldbeauty" />
+    <button className="bg-indigo-600 text-white px-4 py-2 rounded">Initialize</button>
+  </div>
+);

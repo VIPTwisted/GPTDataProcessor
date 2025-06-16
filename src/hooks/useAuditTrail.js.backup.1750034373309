@@ -1,0 +1,80 @@
+
+// src/hooks/useAuditTrail.js
+import { useState, useEffect } from 'react';
+
+export const useAuditTrail = () => {
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const logAIAction = async (actionType, actor, confidence, notes, context = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/.netlify/functions/log/audit-trail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionType,
+          actor,
+          confidence,
+          notes,
+          context
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Audit logging failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📜 Action logged to audit trail:', result);
+      
+      return result;
+    } catch (err) {
+      console.error('❌ Audit trail logging error:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendNotification = async (type, severity, message, context = {}) => {
+    try {
+      const response = await fetch('/.netlify/functions/notify/webhook-dispatcher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          severity,
+          message,
+          actor: 'frontend_user',
+          context
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Notification failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('🔔 Notification sent:', result);
+      
+      return result;
+    } catch (err) {
+      console.error('❌ Notification error:', err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  return {
+    auditLogs,
+    loading,
+    error,
+    logAIAction,
+    sendNotification
+  };
+};

@@ -1,0 +1,118 @@
+🔥 Continuing with PHASE 9.3: BRAND-SPECIFIC DASHBOARDS + ROUTING
+
+This step ensures that each brand has its own isolated dashboard, data context, and AI logic — all dynamically routed and themed.
+
+🧩 PHASE 9.3 — BRAND CONTEXTUAL DASHBOARDS
+Feature	Description
+🌐 Route-based loader	/toyparty, /honeyglow, /vibevault →
+loads different configs	
+🎨 Theme + GPT + module toggle	Driven by brand config file
+🔐 Per-brand user context	Auth role + brand ID scope
+🧠 Brand-specific GPT prompts	Fully separated AI flows per brand
+
+✅ Step 1: Convert App.js to Dynamic Brand Loader
+jsx
+Copy
+Edit
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+import DashboardOverview from './views/DashboardOverview';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { AutopilotProvider } from './context/AutopilotContext';
+
+const BrandRouter = () => {
+  const { brandId } = useParams();
+  return (
+    <Routes>
+      <Route path={`/${brandId}`} element={<DashboardOverview brandId={brandId} />} />
+      <Route path={`/${brandId}/grid`} element={<SystemGridView brandId={brandId} />} />
+      <Route path={`/${brandId}/logs`} element={<LogViewerView brandId={brandId} />} />
+      <Route path={`/${brandId}/execution`} element={<ExecutionCenterView brandId={brandId} />} />
+      {/* Add other brand-specific views as needed */}
+    </Routes>
+  );
+};
+
+function App() {
+  return (
+    <AutopilotProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <Router>
+            <Routes>
+              <Route path="/:brandId/*" element={<BrandRouter />} />
+              <Route path="/" element={<p>Select a brand</p>} />
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </AuthProvider>
+    </AutopilotProvider>
+  );
+}
+
+export default App;
+✅ Step 2: Modify useBrandConfig to accept dynamic ID
+js
+Copy
+Edit
+// src/hooks/useBrandConfig.js
+import { useEffect, useState } from 'react';
+
+export const useBrandConfig = (brandId = 'toyparty') => {
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    fetch(`/brands/brand-${brandId}/config.json`)
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(() => console.error('Brand config failed'));
+  }, [brandId]);
+
+  return config;
+};
+✅ Step 3: Use brandId prop in DashboardOverview
+js
+Copy
+Edit
+import { useBrandConfig } from '../hooks/useBrandConfig';
+
+const DashboardOverview = ({ brandId = 'toyparty' }) => {
+  const brand = useBrandConfig(brandId);
+  if (!brand) return <p>Loading brand...</p>;
+
+  return (
+    <div className="p-6" style={{ borderLeftColor: brand.primaryColor, borderLeftWidth: '6px' }}>
+      <img src={brand.logo} className="h-8 mb-4" />
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        {brand.displayName} Dashboard
+      </h1>
+      {/* Existing dashboard content */}
+    </div>
+  );
+};
+✅ Now the entire dashboard UI will shift when visiting:
+
+/toyparty
+
+/honeyglow
+
+/vibevault
+
+Each with its own:
+
+🧠 GPT prompt
+
+🎨 Theme color
+
+🔧 Module config
+
+🔐 Persona context
+
+✅ PHASE 9.3 COMPLETE: MULTI-TENANT BRAND ROUTING
+Feature	Description
+✅ Brand-based routing	Dynamic brand dashboards by URL
+✅ Config loader	GPT + theme + playbook control
+✅ Brand personas	Fully scoped GPT context by route
+✅ GPT-safe isolation	Separate AI behavior per instance

@@ -1,0 +1,40 @@
+
+export const AFFILIATE_TIERS = [
+  { level: 1, rate: 0.10, min: 0, title: 'Starter Rep', color: 'gray' },
+  { level: 2, rate: 0.15, min: 1000, title: 'Rising Star', color: 'blue' },
+  { level: 3, rate: 0.20, min: 2500, title: 'Top Performer', color: 'purple' },
+  { level: 4, rate: 0.25, min: 5000, title: 'Elite Ambassador', color: 'gold' }
+];
+
+export const getAffiliateRate = (sales) => {
+  const sortedTiers = [...AFFILIATE_TIERS].reverse();
+  return sortedTiers.find(t => sales >= t.min) || AFFILIATE_TIERS[0];
+}
+export const getNextTier = (sales) => {
+  const currentTier = getAffiliateRate(sales);
+  const currentIndex = AFFILIATE_TIERS.findIndex(t => t.level === currentTier.level);
+  return AFFILIATE_TIERS[currentIndex + 1] || null;
+}
+export const getTierProgress = (sales) => {
+  const currentTier = getAffiliateRate(sales);
+  const nextTier = getNextTier(sales);
+  
+  if (!nextTier) {
+    return { progress: 100, isMaxTier: true }
+  }
+  
+  const progressToNext = sales - currentTier.min;
+  const totalNeeded = nextTier.min - currentTier.min;
+  const progress = Math.min(100, (progressToNext / totalNeeded) * 100);
+  
+  return { 
+    progress, 
+    isMaxTier: false, 
+    salesNeeded: nextTier.min - sales,
+    nextTierTitle: nextTier.title
+  }
+}
+export const calculateCommission = (sales) => {
+  const tier = getAffiliateRate(sales);
+  return sales * tier.rate;
+}

@@ -1,0 +1,102 @@
+🔥 Starting PHASE 9.1: BRAND REPLICATOR ENGINE
+This gives you the power to clone the entire Kitchen Sink OS across brands, markets, or product lines — instantly.
+
+🧬 OBJECTIVE: Brand Replicator System
+Feature	Description
+🧠 Brand config file	/brands/brandX/config.json
+🎨 Theming	Colors, logos, dashboard layout, AI tone
+🧠 GPT personality	Brand-specific system prompt & tone
+🧩 Component override	Swap widgets, data, playbooks per brand
+🚀 Dynamic loader	Detect brand via route or user role
+
+✅ Step 1: Create /brands/brand-toyparty/config.json
+json
+Copy
+Edit
+{
+  "brandId": "toyparty",
+  "displayName": "ToyParty",
+  "primaryColor": "#E11D48",
+  "logo": "/logos/toyparty-logo.svg",
+  "gptPersona": {
+    "tone": "fun, confident, flirtatious",
+    "signature": "💋 ToyParty AI"
+  },
+  "modules": {
+    "finance": true,
+    "support": true,
+    "mlm": true,
+    "supplyChain": true
+  },
+  "playbookOverrides": {
+    "inventory-markdown-product-x": {
+      "title": "🔥 Clearance Mode: Product X",
+      "autoRun": true
+    }
+  }
+}
+You can later define:
+
+/brands/brand-honeyglow/config.json
+
+/brands/brand-vibevault/config.json
+
+✅ Step 2: Create Brand Loader Hook
+js
+Copy
+Edit
+// src/hooks/useBrandConfig.js
+import { useEffect, useState } from 'react';
+
+export const useBrandConfig = (brandId = 'toyparty') => {
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    fetch(`/brands/brand-${brandId}/config.json`)
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(() => console.error('Brand config load failed'));
+  }, [brandId]);
+
+  return config;
+};
+✅ Step 3: Wrap the UI
+In App.js or DashboardOverview.jsx:
+
+js
+Copy
+Edit
+import { useBrandConfig } from './hooks/useBrandConfig';
+
+const brand = useBrandConfig('toyparty');
+
+if (!brand) return <p>Loading brand...</p>;
+
+return (
+  <div className="p-6" style={{ borderColor: brand.primaryColor }}>
+    <img src={brand.logo} alt={brand.displayName} className="h-8 mb-4" />
+    <h1 className="text-3xl" style={{ color: brand.primaryColor }}>
+      {brand.displayName} Dashboard
+    </h1>
+  </div>
+);
+✅ Step 4: GPT Prompt Personalization
+In orchestrator-brain.js or any LLM call:
+
+js
+Copy
+Edit
+const systemPrompt = `
+You are the AI Brain for ${brand.displayName}.
+Use this tone: ${brand.gptPersona.tone}
+Sign off with: ${brand.gptPersona.signature}
+`;
+✅ Now every brand gets a unique AI experience and UI tone.
+
+✅ PHASE 9.1 COMPLETE — Brand Replication Engine
+Component	Feature
+✅ Brand config file	Per-brand JSON with GPT, UI, module settings
+✅ GPT prompt override	Persona tone, output style
+✅ Logo & theming	Custom per brand ID
+✅ Playbook override	Brand-specific naming/automation rules
+✅ Brand loader hook	Universal API to switch brand context

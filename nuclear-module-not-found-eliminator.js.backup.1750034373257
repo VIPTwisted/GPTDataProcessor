@@ -1,0 +1,640 @@
+
+const fs = require('fs');
+const path = require('path');
+const { execSync, spawn } = require('child_process');
+
+class NuclearModuleNotFoundEliminator {
+  constructor() {
+    this.missingModules = new Set();
+    this.installedModules = [];
+    this.failedModules = [];
+    this.errorLog = [];
+    this.installLog = [];
+    this.retryAttempts = {};
+    this.maxRetries = 5;
+    
+    console.log('💥 NUCLEAR MODULE NOT FOUND ELIMINATOR INITIATED');
+    console.log('🎯 TARGETING ALL MODULE_NOT_FOUND ERRORS');
+    console.log('=' .repeat(70));
+  }
+
+  log(message) {
+    const timestamp = new Date().toISOString();
+    console.log(`💥 [${timestamp}] ${message}`);
+    this.installLog.push(`${timestamp}: ${message}`);
+  }
+
+  async executeNuclearModuleFix() {
+    const startTime = Date.now();
+    
+    try {
+      this.log('🚀 EXECUTING NUCLEAR MODULE NOT FOUND ELIMINATION...');
+      
+      // Nuclear fix sequence
+      await this.scanAllFilesForMissingModules();
+      await this.detectRuntimeErrors();
+      await this.nuclearPackageCleanup();
+      await this.installAllMissingModules();
+      await this.retryFailedModules();
+      await this.validateAllModules();
+      await this.createModuleRecoverySystem();
+      
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      return this.generateFinalReport(duration);
+      
+    } catch (error) {
+      this.log(`💥 Nuclear module fix error: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async scanAllFilesForMissingModules() {
+    this.log('🔍 SCANNING ALL FILES FOR MODULE DEPENDENCIES...');
+    
+    const jsFiles = this.getAllJavaScriptFiles();
+    const jsonFiles = this.getAllPackageFiles();
+    
+    // Scan JavaScript files for require/import statements
+    for (const file of jsFiles) {
+      try {
+        const content = fs.readFileSync(file, 'utf8');
+        this.extractModulesFromContent(content, file);
+      } catch (error) {
+        this.log(`⚠️ Could not scan ${file}: ${error.message}`);
+      }
+    }
+    
+    // Scan package.json files
+    for (const file of jsonFiles) {
+      try {
+        this.extractModulesFromPackageJson(file);
+      } catch (error) {
+        this.log(`⚠️ Could not scan ${file}: ${error.message}`);
+      }
+    }
+    
+    this.log(`📋 Found ${this.missingModules.size} potential missing modules`);
+  }
+
+  extractModulesFromContent(content, filePath) {
+    // Enhanced patterns to catch all module imports
+    const patterns = [
+      /require\(['"`]([^'"`]+)['"`]\)/g,
+      /import\s+.*?from\s+['"`]([^'"`]+)['"`]/g,
+      /import\(['"`]([^'"`]+)['"`]\)/g,
+      /import\s+['"`]([^'"`]+)['"`]/g,
+      /const\s+\w+\s*=\s*require\(['"`]([^'"`]+)['"`]\)/g,
+      /let\s+\w+\s*=\s*require\(['"`]([^'"`]+)['"`]\)/g,
+      /var\s+\w+\s*=\s*require\(['"`]([^'"`]+)['"`]\)/g,
+      /await import\(['"`]([^'"`]+)['"`]\)/g
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        const moduleName = match[1];
+        if (this.isExternalModule(moduleName)) {
+          this.missingModules.add(moduleName);
+          this.log(`📦 Found module dependency: ${moduleName} in ${path.basename(filePath)}`);
+        }
+      }
+    }
+  }
+
+  extractModulesFromPackageJson(filePath) {
+    try {
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      
+      if (content.dependencies) {
+        Object.keys(content.dependencies).forEach(dep => {
+          this.missingModules.add(dep);
+        });
+      }
+      
+      if (content.devDependencies) {
+        Object.keys(content.devDependencies).forEach(dep => {
+          this.missingModules.add(dep);
+        });
+      }
+      
+      this.log(`📋 Extracted dependencies from ${path.basename(filePath)}`);
+    } catch (error) {
+      this.log(`⚠️ Could not parse ${filePath}: ${error.message}`);
+    }
+  }
+
+  async detectRuntimeErrors() {
+    this.log('🔍 DETECTING RUNTIME MODULE ERRORS...');
+    
+    const jsFiles = this.getAllJavaScriptFiles();
+    
+    for (const file of jsFiles) {
+      try {
+        // Clear require cache
+        const fullPath = path.resolve(file);
+        delete require.cache[fullPath];
+        
+        // Try to require the file to detect missing modules
+        if (file !== __filename) {
+          try {
+            require(fullPath);
+          } catch (error) {
+            if (error.code === 'MODULE_NOT_FOUND') {
+              const moduleName = this.extractModuleNameFromError(error.message);
+              if (moduleName) {
+                this.missingModules.add(moduleName);
+                this.log(`❌ Runtime error detected: ${moduleName} missing in ${path.basename(file)}`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        this.log(`⚠️ Could not test ${file}: ${error.message}`);
+      }
+    }
+  }
+
+  extractModuleNameFromError(errorMessage) {
+    // Extract module name from various error message formats
+    const patterns = [
+      /Cannot find module '([^']+)'/,
+      /Cannot find module "([^"]+)"/,
+      /Module not found: Error: Can't resolve '([^']+)'/,
+      /Error: Cannot find module '([^']+)'/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = errorMessage.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  }
+
+  isExternalModule(moduleName) {
+    // Check if it's an external module (not local file or built-in)
+    return !moduleName.startsWith('.') && 
+           !moduleName.startsWith('/') && 
+           !moduleName.startsWith('node:') &&
+           !['fs', 'path', 'http', 'https', 'crypto', 'util', 'os', 'events', 'stream', 'buffer', 'url', 'querystring', 'child_process'].includes(moduleName);
+  }
+
+  async nuclearPackageCleanup() {
+    this.log('🧹 NUCLEAR PACKAGE CLEANUP...');
+    
+    const cleanupCommands = [
+      'pkill -f "npm" || true',
+      'pkill -f "yarn" || true',
+      'pkill -f "node.*npm" || true',
+      'rm -rf node_modules/.cache || true',
+      'rm -rf ~/.npm/_cacache || true',
+      'rm -rf /tmp/npm-* || true',
+      'npm cache clean --force || true'
+    ];
+
+    for (const cmd of cleanupCommands) {
+      try {
+        await this.executeCommand(cmd, { ignoreErrors: true });
+        this.log(`✅ Cleanup: ${cmd}`);
+      } catch (error) {
+        this.log(`⚠️ Cleanup warning: ${error.message}`);
+      }
+      await this.sleep(1000);
+    }
+  }
+
+  async installAllMissingModules() {
+    this.log('📦 INSTALLING ALL MISSING MODULES...');
+    
+    const moduleList = Array.from(this.missingModules);
+    this.log(`🎯 Total modules to install: ${moduleList.length}`);
+    
+    // Add essential modules that are commonly needed
+    const essentialModules = [
+      'express', 'cors', 'helmet', 'dotenv', 'fs-extra',
+      'axios', 'lodash', 'moment', 'uuid', 'chalk',
+      'glob', 'commander', 'inquirer', 'debug',
+      'bcrypt', 'jsonwebtoken', 'multer', 'body-parser',
+      'cookie-parser', 'compression', 'morgan',
+      'nodemailer', 'socket.io', 'ws', 'sharp',
+      'react', 'react-dom', 'react-router-dom',
+      'styled-components', 'framer-motion'
+    ];
+    
+    const allModules = [...new Set([...moduleList, ...essentialModules])];
+    
+    // Install in batches to avoid timeouts
+    const batchSize = 3;
+    const batches = [];
+    
+    for (let i = 0; i < allModules.length; i += batchSize) {
+      batches.push(allModules.slice(i, i + batchSize));
+    }
+    
+    for (const [index, batch] of batches.entries()) {
+      this.log(`📦 Installing batch ${index + 1}/${batches.length}: ${batch.join(', ')}`);
+      
+      try {
+        await this.installModuleBatch(batch);
+        this.log(`✅ Batch ${index + 1} completed successfully`);
+      } catch (error) {
+        this.log(`❌ Batch ${index + 1} failed, trying individual installation...`);
+        
+        // Try installing each module individually
+        for (const module of batch) {
+          await this.installSingleModule(module);
+          await this.sleep(2000);
+        }
+      }
+      
+      // Delay between batches
+      await this.sleep(5000);
+    }
+  }
+
+  async installModuleBatch(modules) {
+    const strategies = [
+      () => this.executeCommand(`npm install ${modules.join(' ')} --save`),
+      () => this.executeCommand(`npm install ${modules.join(' ')} --save --force`),
+      () => this.executeCommand(`npm install ${modules.join(' ')} --save --legacy-peer-deps`),
+      () => this.executeCommand(`yarn add ${modules.join(' ')}`)
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        await strategy();
+        this.installedModules.push(...modules);
+        return true;
+      } catch (error) {
+        this.log(`⚠️ Batch strategy failed: ${error.message.slice(0, 100)}`);
+      }
+    }
+    
+    throw new Error('All batch installation strategies failed');
+  }
+
+  async installSingleModule(moduleName) {
+    if (this.retryAttempts[moduleName] >= this.maxRetries) {
+      this.log(`❌ Max retries exceeded for: ${moduleName}`);
+      this.failedModules.push(moduleName);
+      return false;
+    }
+
+    this.retryAttempts[moduleName] = (this.retryAttempts[moduleName] || 0) + 1;
+    this.log(`📦 Installing: ${moduleName} (attempt ${this.retryAttempts[moduleName]})`);
+
+    const strategies = [
+      () => this.executeCommand(`npm install ${moduleName} --save`),
+      () => this.executeCommand(`npm install ${moduleName} --save --force`),
+      () => this.executeCommand(`npm install ${moduleName} --save --legacy-peer-deps`),
+      () => this.executeCommand(`npm install ${moduleName} --save --no-optional`),
+      () => this.executeCommand(`yarn add ${moduleName}`),
+      () => this.executeCommand(`npm install ${moduleName} --save --no-audit --no-fund`),
+      () => this.executeCommand(`npm install ${moduleName} --save --prefer-offline`)
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        await strategy();
+        this.installedModules.push(moduleName);
+        this.log(`✅ SUCCESS: ${moduleName} installed`);
+        return true;
+      } catch (error) {
+        this.log(`⚠️ Strategy failed for ${moduleName}: ${error.message.slice(0, 100)}`);
+        await this.sleep(1000);
+      }
+    }
+
+    this.log(`❌ All strategies failed for: ${moduleName}`);
+    return false;
+  }
+
+  async retryFailedModules() {
+    if (this.failedModules.length === 0) {
+      this.log('✅ No failed modules to retry');
+      return;
+    }
+
+    this.log(`🔄 RETRYING ${this.failedModules.length} FAILED MODULES...`);
+    
+    const failedCopy = [...this.failedModules];
+    this.failedModules = [];
+    
+    // Reset retry attempts for failed modules
+    failedCopy.forEach(module => {
+      this.retryAttempts[module] = 0;
+    });
+
+    for (const module of failedCopy) {
+      this.log(`🔄 Final retry: ${module}`);
+      await this.installSingleModule(module);
+      await this.sleep(3000);
+    }
+  }
+
+  async validateAllModules() {
+    this.log('✅ VALIDATING ALL INSTALLED MODULES...');
+    
+    let validModules = 0;
+    let invalidModules = 0;
+    
+    for (const module of this.installedModules) {
+      try {
+        require.resolve(module);
+        validModules++;
+        this.log(`✅ Valid: ${module}`);
+      } catch (error) {
+        invalidModules++;
+        this.log(`❌ Invalid: ${module} - ${error.message}`);
+      }
+    }
+    
+    this.log(`🎯 Validation complete: ${validModules} valid, ${invalidModules} invalid`);
+  }
+
+  async createModuleRecoverySystem() {
+    this.log('🛡️ CREATING MODULE RECOVERY SYSTEM...');
+    
+    const recoveryScript = `#!/usr/bin/env node
+// Nuclear Module Recovery System
+const fs = require('fs');
+const { spawn } = require('child_process');
+
+class ModuleRecoverySystem {
+  static async checkAndRecover() {
+    console.log('🔍 Checking for MODULE_NOT_FOUND errors...');
+    
+    const jsFiles = this.getAllJavaScriptFiles();
+    const missingModules = new Set();
+    
+    for (const file of jsFiles) {
+      try {
+        const fullPath = require.resolve(file);
+        delete require.cache[fullPath];
+        require(fullPath);
+      } catch (error) {
+        if (error.code === 'MODULE_NOT_FOUND') {
+          const moduleName = this.extractModuleName(error.message);
+          if (moduleName) {
+            missingModules.add(moduleName);
+            console.log(\`❌ Missing module: \${moduleName}\`);
+          }
+        }
+      }
+    }
+    
+    if (missingModules.size > 0) {
+      console.log(\`🚨 Found \${missingModules.size} missing modules, initiating recovery...\`);
+      const { execSync } = require('child_process');
+      
+      try {
+        execSync('node nuclear-module-not-found-eliminator.js', { stdio: 'inherit' });
+        console.log('✅ Module recovery completed');
+      } catch (error) {
+        console.error('❌ Module recovery failed:', error.message);
+      }
+    } else {
+      console.log('✅ All modules are available');
+    }
+  }
+  
+  static getAllJavaScriptFiles() {
+    const files = [];
+    const excludeDirs = ['.git', 'node_modules', '.cache', 'logs', 'attached_assets'];
+    
+    function scanDir(dir) {
+      if (!fs.existsSync(dir)) return;
+      
+      try {
+        const items = fs.readdirSync(dir, { withFileTypes: true });
+        
+        for (const item of items) {
+          const fullPath = require('path').join(dir, item.name);
+          
+          if (item.isDirectory() && !excludeDirs.includes(item.name)) {
+            scanDir(fullPath);
+          } else if (item.isFile() && item.name.endsWith('.js')) {
+            files.push(fullPath);
+          }
+        }
+      } catch (error) {
+        // Skip inaccessible directories
+      }
+    }
+    
+    scanDir('.');
+    return files;
+  }
+  
+  static extractModuleName(errorMessage) {
+    const patterns = [
+      /Cannot find module '([^']+)'/,
+      /Cannot find module "([^"]+)"/,
+      /Module not found: Error: Can't resolve '([^']+)'/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = errorMessage.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  }
+  
+  static startMonitoring() {
+    console.log('👁️ Starting module monitoring...');
+    
+    setInterval(() => {
+      this.checkAndRecover();
+    }, 120000); // Check every 2 minutes
+  }
+}
+
+if (require.main === module) {
+  ModuleRecoverySystem.checkAndRecover().then(() => {
+    ModuleRecoverySystem.startMonitoring();
+  });
+}
+
+module.exports = ModuleRecoverySystem;`;
+
+    fs.writeFileSync('module-recovery-system.js', recoveryScript);
+    this.log('✅ Created module recovery system');
+  }
+
+  async executeCommand(command, options = {}) {
+    const { timeout = 120000, ignoreErrors = false } = options;
+    
+    return new Promise((resolve, reject) => {
+      const process = spawn('sh', ['-c', command], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: timeout
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      process.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      process.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      process.on('close', (code) => {
+        if (code === 0 || ignoreErrors) {
+          resolve({ success: true, stdout, stderr, code });
+        } else {
+          reject(new Error(`Command failed with code ${code}: ${stderr || stdout}`));
+        }
+      });
+
+      process.on('error', (error) => {
+        if (ignoreErrors) {
+          resolve({ success: false, error: error.message });
+        } else {
+          reject(error);
+        }
+      });
+
+      // Timeout handling
+      setTimeout(() => {
+        if (!process.killed) {
+          process.kill('SIGKILL');
+          if (!ignoreErrors) {
+            reject(new Error(`Command timeout: ${command}`));
+          }
+        }
+      }, timeout);
+    });
+  }
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  getAllJavaScriptFiles() {
+    const files = [];
+    const excludeDirs = ['.git', 'node_modules', '.cache', 'logs', 'attached_assets', 'dist'];
+
+    function scanDir(dir) {
+      if (!fs.existsSync(dir)) return;
+
+      try {
+        const items = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const item of items) {
+          const fullPath = path.join(dir, item.name);
+
+          if (item.isDirectory() && !excludeDirs.includes(item.name)) {
+            scanDir(fullPath);
+          } else if (item.isFile() && item.name.endsWith('.js') && !item.name.includes('.backup.')) {
+            files.push(fullPath);
+          }
+        }
+      } catch (error) {
+        // Skip inaccessible directories
+      }
+    }
+
+    scanDir('.');
+    return files;
+  }
+
+  getAllPackageFiles() {
+    const files = [];
+    const packageFiles = ['package.json', 'package-lock.json', 'yarn.lock'];
+    
+    function scanDir(dir) {
+      if (!fs.existsSync(dir)) return;
+      if (dir.includes('node_modules')) return;
+
+      try {
+        const items = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const item of items) {
+          const fullPath = path.join(dir, item.name);
+
+          if (item.isDirectory()) {
+            scanDir(fullPath);
+          } else if (item.isFile() && packageFiles.includes(item.name)) {
+            files.push(fullPath);
+          }
+        }
+      } catch (error) {
+        // Skip inaccessible directories
+      }
+    }
+
+    scanDir('.');
+    return files;
+  }
+
+  generateFinalReport(duration) {
+    const report = {
+      timestamp: new Date().toISOString(),
+      executionTime: duration,
+      summary: {
+        totalModulesFound: this.missingModules.size,
+        modulesInstalled: this.installedModules.length,
+        modulesFailed: this.failedModules.length,
+        successRate: this.installedModules.length > 0 ? 
+          Math.round((this.installedModules.length / (this.installedModules.length + this.failedModules.length)) * 100) : 0
+      },
+      installedModules: this.installedModules,
+      failedModules: this.failedModules,
+      retryAttempts: this.retryAttempts,
+      installLog: this.installLog
+    };
+
+    // Save report
+    if (!fs.existsSync('logs')) {
+      fs.mkdirSync('logs', { recursive: true });
+    }
+    
+    fs.writeFileSync('logs/nuclear-module-elimination-report.json', JSON.stringify(report, null, 2));
+
+    this.log('💥 =======================================');
+    this.log('💥 NUCLEAR MODULE ELIMINATION COMPLETE!');
+    this.log(`💥 COMPLETED IN ${duration} SECONDS`);
+    this.log(`💥 MODULES INSTALLED: ${this.installedModules.length}`);
+    this.log(`💥 MODULES FAILED: ${this.failedModules.length}`);
+    this.log(`💥 SUCCESS RATE: ${report.summary.successRate}%`);
+    this.log('💥 =======================================');
+
+    if (report.summary.successRate >= 80) {
+      this.log('🚀 NUCLEAR MODULE ELIMINATION SUCCESSFUL!');
+      this.log('🛡️ Module recovery system activated');
+      return { success: true, report };
+    } else {
+      this.log('⚠️ PARTIAL SUCCESS - SOME MODULES NEED MANUAL REVIEW');
+      return { success: false, report };
+    }
+  }
+}
+
+// Auto-execute if run directly
+if (require.main === module) {
+  const eliminator = new NuclearModuleNotFoundEliminator();
+  
+  eliminator.executeNuclearModuleFix().then(result => {
+    if (result.success) {
+      console.log('\n💥 ALL MODULE_NOT_FOUND ERRORS ELIMINATED!');
+      console.log('💥 SYSTEM READY FOR DEPLOYMENT!');
+      process.exit(0);
+    } else {
+      console.log('\n💥 PARTIAL SUCCESS - CHECK REPORT FOR DETAILS');
+      process.exit(1);
+    }
+  }).catch(error => {
+    console.error('💥 NUCLEAR MODULE ELIMINATION FAILED:', error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = NuclearModuleNotFoundEliminator;

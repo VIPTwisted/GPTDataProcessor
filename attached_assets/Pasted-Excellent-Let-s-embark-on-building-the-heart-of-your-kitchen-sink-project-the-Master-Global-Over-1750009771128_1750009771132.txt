@@ -1,0 +1,216 @@
+Excellent! Let's embark on building the heart of your "kitchen sink" project: the Master Global Overview (The CEO's Hyper-Intelligent Command Page).
+
+This will be a highly sophisticated, real-time, and AI-driven dashboard. For now, the data will be mocked, but the structure, AI integration points, and UI design will be ready to seamlessly connect to your real backend data as we build out the other modules.
+
+Due to the extensive nature of this dashboard, I'll provide the code in several parts, focusing on the key files and components.
+
+PHASE 3: IMPLEMENTING THE MASTER GLOBAL OVERVIEW
+We'll start with the main view and its core widgets.
+
+Files to be Created/Updated:
+
+src/views/DashboardOverview.jsx (Updated): The central dashboard page.
+src/components/widgets/ (New Directory): Contains reusable widgets for the dashboard.
+AnimatedCard.jsx (Reusable base card for consistency)
+GlobalHealthCard.jsx
+AIPrescriptiveActions.jsx
+FinancialPulseCard.jsx
+GeospatialMapWidget.jsx (Conceptual map component)
+GlobalActivityStream.jsx
+ResourceMetricsCard.jsx
+SparklineChart.jsx (Simple chart for trends)
+src/data/mockGlobalData.js (New File): Centralized mock data for this overview.
+src/App.js (Minor Update): Ensure routing and context setup are correct.
+src/index.css (Minor Update): Additional Tailwind classes if needed for complex styles.
+Let's begin by setting up the foundational reusable card component and the core DashboardOverview.jsx structure.
+
+1. Create src/components/widgets/AnimatedCard.jsx (New File)
+
+This will be a consistent, visually appealing base for all your dashboard widgets, with subtle animations.
+
+JavaScript
+
+// src/components/widgets/AnimatedCard.jsx
+import React from 'react';
+import { motion } from 'framer-motion';
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  hover: { scale: 1.02, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.15)" },
+};
+
+const AnimatedCard = ({ children, className = '', title, onClick, subTitle }) => {
+  return (
+    <motion.div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col justify-between transition-all duration-300 ease-in-out ${className}`}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
+      viewport={{ once: true, amount: 0.8 }}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
+      <div>
+        {title && (
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {title}
+          </h3>
+        )}
+        {subTitle && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{subTitle}</p>
+        )}
+        {children}
+      </div>
+    </motion.div>
+  );
+};
+
+export default AnimatedCard;
+2. Create src/data/mockGlobalData.js (New File)
+
+This file will centralize all the mock data needed for your global overview.
+
+JavaScript
+
+// src/data/mockGlobalData.js
+
+// --- Global Health Data ---
+export const mockGlobalHealth = {
+  status: 'GREEN', // GREEN, YELLOW, ORANGE, RED
+  description: 'All Core Systems Operational',
+  predictedStatus: 'GREEN', // AI's prediction
+  predictionConfidence: 0.98, // AI's confidence in prediction
+  issuesDetected: 0,
+  performanceMetrics: {
+    uptime: 99.98, // %
+    response_time_avg: 150, // ms
+    error_rate: 0.01 // %
+  },
+  trendData: [
+    { name: 'Day 1', value: 99.8 }, { name: 'Day 2', value: 99.7 }, { name: 'Day 3', value: 99.9 },
+    { name: 'Day 4', value: 99.85 }, { name: 'Day 5', value: 99.92 }, { name: 'Day 6', value: 99.95 },
+    { name: 'Day 7', value: 99.98 }
+  ]
+};
+
+// --- AI Prescriptive Actions ---
+export const mockAIPrescriptiveActions = [
+  {
+    id: 'ai-action-1',
+    priority: 'Critical',
+    title: 'Execute E-commerce API Optimization Playbook',
+    description: 'AI detected 15% increase in API latency impacting checkout conversions. Estimated 0.5% revenue loss.',
+    recommendedAction: 'Execute auto-scaling script for E-commerce API Gateway and clear cache.',
+    impact: 'High',
+    status: 'Pending Approval',
+    playbookId: 'ecommerce-api-optimize-v2',
+    riskLevel: 'Low',
+    eta: '15 min'
+  },
+  {
+    id: 'ai-action-2',
+    priority: 'High',
+    title: 'Southington Staffing Rebalancing',
+    description: 'Predicted 20% understaffing for peak hours Saturday due to sick calls. Affects customer wait times.',
+    recommendedAction: 'Approve AI-suggested shift swaps for Southington retail location.',
+    impact: 'Medium',
+    status: 'Approved, Executing',
+    playbookId: 'southington-staff-rebalance-v1',
+    riskLevel: 'Very Low',
+    eta: 'Immediate'
+  },
+  {
+    id: 'ai-action-3',
+    priority: 'Medium',
+    title: 'Optimize Warehouse Inventory for Product X',
+    description: 'Excess stock of Product X detected, tying up capital. Predicted 30-day stock remaining.',
+    recommendedAction: 'Initiate markdown strategy for Product X across all channels.',
+    impact: 'Medium',
+    status: 'New Suggestion',
+    playbookId: 'inventory-markdown-product-x',
+    riskLevel: 'Low',
+    eta: '24 hours'
+  },
+];
+
+// --- Financial Pulse Data ---
+export const mockFinancialPulse = {
+  netProfit: 1256789.23, // This month
+  cashFlow: 345123.50, // Current
+  budgetAdherenceScore: 0.95, // 0-1, 1 is perfect
+  budgetVariance: -0.05, // -0.05 = 5% over budget
+  trends: {
+    netProfit: [1000000, 1050000, 1100000, 1150000, 1200000, 1250000, 1256789], // last 7 points
+    cashFlow: [300000, 310000, 320000, 330000, 340000, 345000, 345123]
+  }
+};
+
+// --- Geospatial Data (Simplified Mock for Map Widget) ---
+export const mockGeospatialData = [
+  { id: 'hartford', name: 'Hartford Retail', lat: 41.7637, lon: -72.6851, status: 'GREEN', liveSales: 1250.75, activeRegisters: 2 },
+  { id: 'orange', name: 'Orange Retail', lat: 41.2643, lon: -73.0443, status: 'YELLOW', liveSales: 890.20, activeRegisters: 1 },
+  { id: 'manchester', name: 'Manchester Retail', lat: 41.7796, lon: -72.5234, status: 'GREEN', liveSales: 1560.10, activeRegisters: 2 },
+  { id: 'southington', name: 'Southington Retail', lat: 41.5976, lon: -72.8806, status: 'ORANGE', liveSales: 520.00, activeRegisters: 2 }, // Mocked issue
+  { id: 'warehouse', name: 'Central Warehouse', lat: 41.7200, lon: -72.7000, status: 'GREEN', inventoryHealth: 0.92, activeShipments: 15 },
+  { id: 'cloud-east', name: 'Cloud Region (East)', lat: 38.0000, lon: -78.0000, status: 'GREEN', serversActive: 120, latency: 50 },
+  { id: 'cloud-west', name: 'Cloud Region (West)', lat: 34.0000, lon: -118.0000, status: 'YELLOW', serversActive: 80, latency: 120 }, // Mocked issue
+];
+
+// --- Global Activity & Anomaly Stream ---
+export const mockGlobalActivityStream = [
+  { id: 'act-1', type: 'Deployment', message: 'E-commerce Frontend v2.3 deployed to Production.', timestamp: '2025-06-15T13:45:00Z', severity: 'Info' },
+  { id: 'act-2', type: 'Sales Anomaly', message: 'Unusual low sales detected at Southington Retail (13:30-13:45).', timestamp: '2025-06-15T13:40:00Z', severity: 'Warning', location: 'Southington' },
+  { id: 'act-3', type: 'HR Alert', message: 'New Hire John Doe missed clock-in at Orange Retail.', timestamp: '2025-06-15T13:35:00Z', severity: 'Critical', location: 'Orange' },
+  { id: 'act-4', type: 'AI Insight', message: 'AI suggests optimizing warehouse picking routes for next 2 hours.', timestamp: '2025-06-15T13:30:00Z', severity: 'Info' },
+  { id: 'act-5', type: 'Security Alert', message: 'Multiple failed login attempts on Admin Panel.', timestamp: '2025-06-15T13:25:00Z', severity: 'Critical' },
+  { id: 'act-6', type: 'Customer Service', message: 'New high-priority ticket: "Website checkout broken."', timestamp: '2025-06-15T13:20:00Z', severity: 'Critical' },
+];
+
+// --- Global Resource Metrics ---
+export const mockResourceMetrics = {
+  cpuUsage: 75, // %
+  memoryUsage: 60, // %
+  networkBandwidth: 85, // %
+  cloudSpendEfficiency: 0.92, // 0-1, 1 is perfect
+  dailyTrend: [
+    { time: '00:00', cpu: 50, mem: 45, net: 60 },
+    { time: '04:00', cpu: 60, mem: 50, net: 70 },
+    { time: '08:00', cpu: 70, mem: 55, net: 80 },
+    { time: '12:00', cpu: 75, mem: 60, net: 85 },
+    { time: '16:00', cpu: 80, mem: 65, net: 90 },
+    { time: '20:00', cpu: 70, mem: 58, net: 75 },
+  ]
+};
+
+// --- Helper for status colors ---
+export const getStatusColor = (status) => {
+  switch (status) {
+    case 'GREEN': return 'text-green-500 bg-green-100 dark:bg-green-800 dark:text-green-200';
+    case 'YELLOW': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-800 dark:text-yellow-200';
+    case 'ORANGE': return 'text-orange-600 bg-orange-100 dark:bg-orange-800 dark:text-orange-200';
+    case 'RED': return 'text-red-600 bg-red-100 dark:bg-red-800 dark:text-red-200';
+    case 'CRITICAL': return 'text-red-600 bg-red-100 dark:bg-red-800 dark:text-red-200';
+    case 'WARNING': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-800 dark:text-yellow-200';
+    case 'INFO': return 'text-blue-600 bg-blue-100 dark:bg-blue-800 dark:text-blue-200';
+    default: return 'text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300';
+  }
+};
+
+export const getStatusIcon = (status) => {
+  switch (status) {
+    case 'GREEN': return '🟢';
+    case 'YELLOW': return '🟡';
+    case 'ORANGE': return '🟠';
+    case 'RED': return '🔴';
+    case 'CRITICAL': return '🚨';
+    case 'WARNING': return '⚠️';
+    case 'INFO': return 'ℹ️';
+    default: return '⚪';
+  }
+};
+
+export const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+};

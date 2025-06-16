@@ -1,0 +1,44 @@
+
+// netlify/functions/brain/feedback-loop.js
+const fs = require('fs');
+const path = require('path');
+
+exports.handler = async () => {
+  const logDir = '/tmp/audit-logs';
+  if (!fs.existsSync(logDir)) return { statusCode: 404, body: 'No logs' }
+  const logs = fs.readdirSync(logDir).map(file => {
+    const log = fs.readFileSync(path.join(logDir, file), 'utf8');
+    return JSON.parse(log);
+  });
+
+  // Aggregate outcome by module and confidence
+  const moduleStats = {}
+  logs.forEach(log => {
+    const module = log.context?.module || 'Unknown';
+    const outcome = log.notes?.includes('Executed') ? 'success' : 'rejected';
+    const conf = log.confidence || 0;
+
+    if (!moduleStats[module]) {
+      moduleStats[module] = { success: 0, rejected: 0, totalConfidence: 0, count: 0 }
+    }
+
+    if (outcome === 'success') moduleStats[module].success++;
+    else moduleStats[module].rejected++;
+
+    moduleStats[module].totalConfidence += conf;
+    moduleStats[module].count++;
+  });
+
+  // Generate updated thresholds per module
+  const thresholds = Object.entries(moduleStats).map(([mod, stats]) => ({
+    module: mod,
+    successRate: (stats.success / (stats.count || 1)).toFixed(2),
+    avgConfidence: (stats.totalConfidence / (stats.count || 1)).toFixed(2),
+    newThreshold: Math.max(0.75, Math.min(0.98, stats.totalConfidence / (stats.count || 1))).toFixed(2)
+  }));
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ thresholds })
+  }
+}

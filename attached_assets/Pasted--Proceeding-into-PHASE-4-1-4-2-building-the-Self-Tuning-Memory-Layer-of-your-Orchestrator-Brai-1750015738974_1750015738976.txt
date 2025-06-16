@@ -1,0 +1,88 @@
+💥 Proceeding into PHASE 4.1–4.2 — building the Self-Tuning & Memory Layer of your Orchestrator Brain.
+
+This turns your GPT into a learning agent that:
+
+📊 Adjusts its confidence and aggressiveness
+
+🧠 Remembers outcomes of past decisions
+
+✅ Improves over time with approval/rejection feedback
+
+🧠 PHASE 4.1: AI SELF-TUNER (Dynamic Confidence Thresholds)
+✅ Create netlify/functions/brain/self-tuner.js
+js
+Copy
+Edit
+// netlify/functions/brain/self-tuner.js
+const fs = require('fs');
+const path = require('path');
+
+exports.handler = async () => {
+  const logDir = '/tmp/audit-logs';
+  if (!fs.existsSync(logDir)) return { statusCode: 404, body: 'No logs' };
+
+  const logs = fs.readdirSync(logDir).map(f => {
+    const entry = JSON.parse(fs.readFileSync(path.join(logDir, f)));
+    return entry;
+  });
+
+  // Example: Analyze success vs rejection rate
+  let successCount = 0;
+  let rejectedCount = 0;
+  let avgConfidence = 0;
+
+  logs.forEach(log => {
+    if (!log.confidence) return;
+    avgConfidence += log.confidence;
+    if (log.notes?.includes('Executed')) successCount++;
+    if (log.notes?.includes('Rejected')) rejectedCount++;
+  });
+
+  const total = successCount + rejectedCount || 1;
+  const adjustedThreshold = Math.max(0.7, Math.min(0.98, avgConfidence / total));
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      logsScanned: logs.length,
+      successCount,
+      rejectedCount,
+      newThreshold: adjustedThreshold.toFixed(2)
+    })
+  };
+};
+✅ This gives your Orchestrator Brain the power to adjust its behavior based on historical trust performance.
+
+🧠 PHASE 4.2: LLM MEMORY — Feed Past Playbooks to New GPT Prompts
+We inject historical playbooks and execution outcomes into each prompt, creating contextual memory.
+
+✅ Extend orchestrator-brain.js logic
+Replace prompt section with:
+
+js
+Copy
+Edit
+// Fetch memory
+const memoryRes = await fetch(`${process.env.URL}/.netlify/functions/log/list-recent`, {
+  method: 'GET'
+});
+const memoryLog = await memoryRes.json();
+
+const prompt = `
+You are the AI Orchestrator Brain for ToyParty.
+
+Here are recent playbooks executed:
+${memoryLog.slice(0, 3).map(log => `- ${log.playbookId} | Status: ${log.notes}`).join('\n')}
+
+Now decide based on the input below:
+...
+`;
+You can upgrade this with vector embedding + similarity search in Supabase or Pinecone later.
+
+✅ Finalized: Phase 4 Learning Brain
+Component	Description
+✅ Self-Tuner	Adjusts AI confidence dynamically over time
+✅ Memory Feed	Injects recent logs into GPT prompt
+✅ Memory-Aware Decisions	GPT learns from what was approved or rejected
+✅ Modular Hooks	Can evolve into full RL loop with approval weights
+

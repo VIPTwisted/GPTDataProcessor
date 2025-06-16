@@ -1,0 +1,149 @@
+
+// netlify/functions/brain/self-tuner.js
+const fs = require('fs');
+const path = require('path');
+
+exports.handler = async (event) => {
+  try {
+    const logDir = '/tmp/audit-logs';
+    const configPath = '/tmp/ai-config.json';
+
+    // Initialize default config if it doesn't exist
+    let config = {
+      confidenceThreshold: 0.85,
+      aggressiveness: 0.7,
+      lastTuned: null,
+      totalDecisions: 0,
+      successRate: 0.5
+    };
+
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+
+    // If no logs directory exists, return current config
+    if (!fs.existsSync(logDir)) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          message: 'No audit logs found, using default configuration',
+          config,
+          newThreshold: config.confidenceThreshold
+        })
+      };
+    }
+
+    // Read and analyze all log files
+    const logFiles = fs.readdirSync(logDir).filter(f => f.endsWith('.json'));
+    const logs = [];
+
+    logFiles.forEach(file => {
+      try {
+        const logData = JSON.parse(fs.readFileSync(path.join(logDir, file), 'utf8'));
+        logs.push(logData);
+      } catch (err) {
+        console.warn(`Failed to parse log file ${file}:`, err.message);
+      }
+    });
+
+    if (logs.length === 0) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          message: 'No valid logs found',
+          config,
+          newThreshold: config.confidenceThreshold
+        })
+      };
+    }
+
+    // Analyze decision outcomes
+    let successCount = 0;
+    let rejectedCount = 0;
+    let totalConfidence = 0;
+    let validDecisions = 0;
+
+    logs.forEach(log => {
+      if (log.confidence && log.actionType && log.notes) {
+        validDecisions++;
+        totalConfidence += log.confidence;
+
+        // Check outcome based on action type and notes
+        if (log.actionType === 'action_approved' || log.notes.includes('Executed') || log.notes.includes('Success')) {
+          successCount++;
+        } else if (log.actionType === 'action_rejected' || log.notes.includes('Rejected') || log.notes.includes('Failed')) {
+          rejectedCount++;
+        }
+      }
+    });
+
+    const totalDecisions = successCount + rejectedCount;
+    const successRate = totalDecisions > 0 ? successCount / totalDecisions : 0.5;
+    const avgConfidence = validDecisions > 0 ? totalConfidence / validDecisions : 0.85;
+
+    // Dynamic threshold adjustment logic
+    let newThreshold = config.confidenceThreshold;
+    let newAggressiveness = config.aggressiveness;
+
+    if (totalDecisions >= 5) { // Need at least 5 decisions to tune
+      if (successRate > 0.8) {
+        // High success rate - can be more aggressive (lower threshold)
+        newThreshold = Math.max(0.7, config.confidenceThreshold - 0.05);
+        newAggressiveness = Math.min(0.9, config.aggressiveness + 0.1);
+      } else if (successRate < 0.6) {
+        // Low success rate - be more conservative (higher threshold)
+        newThreshold = Math.min(0.95, config.confidenceThreshold + 0.05);
+        newAggressiveness = Math.max(0.5, config.aggressiveness - 0.1);
+      }
+
+      // Adjust based on average confidence of decisions
+      if (avgConfidence > 0.9 && successRate > 0.7) {
+        newThreshold = Math.max(0.75, newThreshold - 0.02);
+      } else if (avgConfidence < 0.8 && successRate < 0.7) {
+        newThreshold = Math.min(0.9, newThreshold + 0.02);
+      }
+    }
+
+    // Update configuration
+    const updatedConfig = {
+      confidenceThreshold: parseFloat(newThreshold.toFixed(3)),
+      aggressiveness: parseFloat(newAggressiveness.toFixed(3)),
+      lastTuned: new Date().toISOString(),
+      totalDecisions,
+      successRate: parseFloat(successRate.toFixed(3)),
+      avgConfidence: parseFloat(avgConfidence.toFixed(3))
+    };
+
+    // Save updated configuration
+    fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2));
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'AI configuration tuned successfully',
+        logsScanned: logs.length,
+        validDecisions,
+        successCount,
+        rejectedCount,
+        successRate: (successRate * 100).toFixed(1) + '%',
+        previousThreshold: config.confidenceThreshold,
+        newThreshold: updatedConfig.confidenceThreshold,
+        aggressiveness: updatedConfig.aggressiveness,
+        tuningReason: successRate > 0.8 ? 'More aggressive due to high success rate' :
+                      successRate < 0.6 ? 'More conservative due to low success rate' :
+                      'Maintaining current settings',
+        config: updatedConfig
+      })
+    };
+
+  } catch (error) {
+    console.error('Self-tuner error:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Failed to tune AI configuration',
+        details: error.message
+      })
+    };
+  }
+};

@@ -1,0 +1,59 @@
+PROMPT FOR REPLIT: IMPLEMENT PHASE 2 - REAL-TIME INTELLIGENCE & PROACTIVE AI
+
+Objective:
+Enhance the existing ToyParty Master Deployment Orchestrator (built in Phase 1) by implementing core real-time data streaming and proactive AI-driven anomaly detection capabilities. This involves fleshing out specific Netlify Functions and integrating their data into the React frontend for a live, intelligent dashboard experience.
+
+CRITICAL CONSTRAINT: USE MOCK/DUMMY DATA FOR EXTERNAL APIs IF NOT DIRECTLY ACCESSIBLE.
+Since live Netlify API data or real OpenAI responses may not be available during this generation, for realtime-streamer.js and ai-analyzer.js, please implement the logic using mock data or placeholder API responses. Clearly indicate where real API calls would go. Continue to use process.env for all API keys.
+
+I. Implement Real-time Event Streaming (realtime-streamer.js & Frontend Integration):
+
+Flesh out netlify/functions/realtime-streamer.js:
+Purpose: This function will act as the Server-Sent Events (SSE) endpoint that your React frontend connects to for live updates.
+Initial Data Sources (Mocked):
+Mock Netlify Build Events: Simulate a stream of Netlify build status changes (e.g., enqueued, building, ready, failed) for a few dummy siteIds. Include realistic timestamps and messages.
+Mock Alert Events: Simulate new alert notifications (e.g., from alert-webhook-processor.js). Include siteId, type (e.g., "critical," "warning"), timestamp, message.
+Mock AI Insight Events: Simulate new proactive AI insights (from ai-analyzer.js).
+SSE Implementation: Use Node.js's response.writeHead for Content-Type: text/event-stream and Cache-Control: no-cache headers. Implement a basic loop to send data: events to the connected client.
+Important: This function should ideally maintain a list of connected clients and push events to them. For this generation, a simplified version that just streams a predefined sequence of mock events is acceptable.
+Integrate Real-time Data into Frontend (React):
+src/context/RealtimeDataContext.jsx (New File): Create a React Context to manage the SSE connection and store the incoming real-time data.
+Establish an EventSource connection to /.netlify/functions/realtime-streamer (or http://localhost:8888/.netlify/functions/realtime-streamer for local dev).
+Store incoming buildUpdates, alertUpdates, aiInsights in context state.
+Update src/App.js: Wrap the main content with <RealtimeDataProvider>.
+Update src/views/DashboardOverview.jsx:
+Consume buildUpdates from RealtimeDataContext.
+Make the site status badges update dynamically based on live build events.
+Show a small, live feed of recent alertUpdates at the top or bottom of the dashboard.
+Update src/views/AlertsPage.jsx:
+Consume alertUpdates from RealtimeDataContext.
+Display new alerts in real-time at the top of the alerts list.
+Update src/views/SiteDetail.jsx:
+Consume buildUpdates specific to the current siteId.
+Display a live build log/status for the current site.
+II. Implement Proactive AI-Driven Anomaly Detection (ai-analyzer.js & Frontend Integration):
+
+Flesh out netlify/functions/ai-analyzer.js:
+Purpose: This function will simulate proactive AI analysis.
+Input (Mocked): Accept mock "monitoring data" (e.g., siteId, buildDurationHistory, trafficSpikeDetected).
+AI Logic (Placeholder/Mocked OpenAI):
+Use a simple if/else logic to simulate AI analysis based on the mock input.
+Simulate Anomaly Detection: If buildDurationHistory shows a sharp increase, generate an anomaly message. If trafficSpikeDetected is true, generate a traffic warning.
+Simulate Predictive Insight: Generate a simple "prediction" based on mock data.
+Output: Return an object containing insightType ("anomaly," "prediction"), message, siteId, and recommendedAction.
+Integration Point: This function would ideally be triggered by a Netlify Scheduler or by alert-webhook-processor.js. For now, implement it as a standalone function that can be called, and also integrate it to push simulated insights to realtime-streamer.js.
+Integrate AI Insights into Frontend (React):
+Update src/views/DashboardOverview.jsx:
+Display the latest Proactive AI Insights (from RealtimeDataContext) as a dedicated, prominent card or section.
+Integrate AI insights directly onto AnimatedCard.jsx for relevant sites.
+Update src/views/AIAssistant.jsx:
+Add a section or dedicated panel to display the "Proactive Insights" the ai-analyzer.js generates, separate from the user chat. This shows the AI actively monitoring.
+III. Update Existing Components for Integration:
+
+src/App.js: Ensure RealtimeDataProvider is correctly wrapping the main application.
+netlify/functions/alert-webhook-processor.js: Modify this function to also trigger sending new alerts to the realtime-streamer.js (conceptually, in the mock data scenario).
+netlify/functions/audit-logger.js (Placeholder): Ensure this is ready to log ai-analyzer.js actions.
+Output:
+Provide the full, updated code for src/context/RealtimeDataContext.jsx, updated sections of src/App.js, src/views/DashboardOverview.jsx, src/views/AlertsPage.jsx, src/views/SiteDetail.jsx, src/views/AIAssistant.jsx, and the complete code for netlify/functions/realtime-streamer.js and netlify/functions/ai-analyzer.js.
+
+This is a significant step towards a truly intelligent and dynamic orchestrator. Let your Replit assistant generate this enhanced code.

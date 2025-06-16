@@ -1,0 +1,90 @@
+🧠 EXECUTIVE SUMMARY WIDGET (AI-Generated & Voice-Enabled)
+This is the first module in our “Cognitive Autonomy” layer, designed to give your CEO a real-time natural language summary of the enterprise.
+
+🔥 Features:
+Summarizes: top anomalies, status, predictions
+
+Includes AI interpretation (mocked)
+
+Has a voice command hook ("Hey Orchestrator...")
+
+Includes speech synthesis (window.speechSynthesis) for audible summary
+
+✅ Step 1: ExecutiveSummaryWidget.jsx
+jsx
+Copy
+Edit
+// src/components/widgets/ExecutiveSummaryWidget.jsx
+import React, { useEffect, useState } from 'react';
+import AnimatedCard from './AnimatedCard';
+import { mockGlobalHealth, mockAIPrescriptiveActions, mockGlobalActivityStream } from '../../data/mockGlobalData';
+
+const generateExecutiveSummary = () => {
+  const criticalEvents = mockGlobalActivityStream.filter(e => e.severity === 'Critical');
+  const pendingActions = mockAIPrescriptiveActions.filter(a => a.status === 'Pending Approval');
+  const prediction = mockGlobalHealth.predictedStatus;
+  const confidence = (mockGlobalHealth.predictionConfidence * 100).toFixed(1);
+
+  return `
+    Current system status is "${mockGlobalHealth.status}" (${mockGlobalHealth.description}).
+    ${criticalEvents.length > 0 ? `There are ${criticalEvents.length} critical anomalies requiring attention.` : 'No critical events detected.'}
+    AI forecasts the system will remain "${prediction}" with ${confidence}% confidence.
+    ${pendingActions.length > 0 ? `${pendingActions.length} high-priority AI actions are awaiting approval.` : 'All AI actions are under control.'}
+  `;
+};
+
+const speakSummary = (summary) => {
+  const utterance = new SpeechSynthesisUtterance(summary);
+  utterance.lang = 'en-US';
+  utterance.pitch = 1;
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+};
+
+const ExecutiveSummaryWidget = () => {
+  const [summary, setSummary] = useState('');
+
+  useEffect(() => {
+    const newSummary = generateExecutiveSummary();
+    setSummary(newSummary);
+  }, []);
+
+  const handleSpeak = () => {
+    speakSummary(summary);
+  };
+
+  return (
+    <AnimatedCard
+      title="Executive AI Summary"
+      subTitle='Voice-enabled natural language overview'
+      className="col-span-1 lg:col-span-2"
+    >
+      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line text-sm leading-relaxed mb-4">
+        {summary}
+      </p>
+      <button
+        onClick={handleSpeak}
+        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+      >
+        🔊 Speak Summary
+      </button>
+    </AnimatedCard>
+  );
+};
+
+export default ExecutiveSummaryWidget;
+✅ Step 2: Integrate in DashboardOverview.jsx
+Add this line to the top imports:
+
+js
+Copy
+Edit
+import ExecutiveSummaryWidget from '../components/widgets/ExecutiveSummaryWidget';
+Then insert the component into your grid layout, preferably at the top:
+
+jsx
+Copy
+Edit
+<div className="lg:col-span-2">
+  <ExecutiveSummaryWidget />
+</div>

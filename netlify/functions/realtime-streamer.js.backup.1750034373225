@@ -1,0 +1,142 @@
+
+exports.handler = async (event, context) => {
+  // Set CORS headers for all requests
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
+  // Generate mock real-time events
+  const mockEvents = generateMockEvents();
+  
+  // Format events for SSE
+  const sseData = mockEvents.map(event => 
+    `data: ${JSON.stringify(event)}\n\n`
+  ).join('');
+
+  return {
+    statusCode: 200,
+    headers,
+    body: sseData
+  };
+};
+
+function generateMockEvents() {
+  const siteIds = ['site-1', 'site-2', 'site-3', 'toyparty-main'];
+  const buildStatuses = ['enqueued', 'building', 'ready', 'failed'];
+  const alertTypes = ['critical', 'warning', 'info'];
+  
+  const events = [];
+  const now = new Date();
+
+  // Mock build events
+  for (let i = 0; i < 5; i++) {
+    const siteId = siteIds[Math.floor(Math.random() * siteIds.length)];
+    const status = buildStatuses[Math.floor(Math.random() * buildStatuses.length)];
+    
+    events.push({
+      type: 'buildUpdate',
+      id: `build-${Date.now()}-${i}`,
+      timestamp: new Date(now.getTime() - (i * 30000)).toISOString(),
+      siteId,
+      status,
+      message: `Build ${status} for ${siteId}`,
+      buildDuration: Math.floor(Math.random() * 300) + 60,
+      commitHash: Math.random().toString(36).substr(2, 7)
+    });
+  }
+
+  // Mock alert events
+  for (let i = 0; i < 3; i++) {
+    const siteId = siteIds[Math.floor(Math.random() * siteIds.length)];
+    const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+    
+    events.push({
+      type: 'alertUpdate',
+      id: `alert-${Date.now()}-${i}`,
+      timestamp: new Date(now.getTime() - (i * 60000)).toISOString(),
+      siteId,
+      severity: alertType,
+      message: getRandomAlertMessage(alertType),
+      resolved: Math.random() > 0.7
+    });
+  }
+
+  // Mock AI insights
+  for (let i = 0; i < 2; i++) {
+    const siteId = siteIds[Math.floor(Math.random() * siteIds.length)];
+    
+    events.push({
+      type: 'aiInsight',
+      id: `ai-${Date.now()}-${i}`,
+      timestamp: new Date(now.getTime() - (i * 120000)).toISOString(),
+      siteId,
+      insightType: Math.random() > 0.5 ? 'anomaly' : 'prediction',
+      message: getRandomAIInsight(),
+      confidence: Math.floor(Math.random() * 30) + 70,
+      recommendedAction: getRandomRecommendation()
+    });
+  }
+
+  return events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function getRandomAlertMessage(type) {
+  const messages = {
+    critical: [
+      'Build pipeline failure detected',
+      'Site experiencing high error rate',
+      'Database connection timeout'
+    ],
+    warning: [
+      'Build time increased by 40%',
+      'Traffic spike detected',
+      'Memory usage above threshold'
+    ],
+    info: [
+      'New deployment completed',
+      'Performance metrics updated',
+      'Backup completed successfully'
+    ]
+  };
+  
+  const typeMessages = messages[type] || messages.info;
+  return typeMessages[Math.floor(Math.random() * typeMessages.length)];
+}
+
+function getRandomAIInsight() {
+  const insights = [
+    'Detected unusual build duration patterns',
+    'Traffic surge predicted in next 2 hours',
+    'Potential memory leak in recent deployment',
+    'Build optimization opportunity identified',
+    'Performance degradation trend detected'
+  ];
+  
+  return insights[Math.floor(Math.random() * insights.length)];
+}
+
+function getRandomRecommendation() {
+  const recommendations = [
+    'Consider increasing build timeout',
+    'Scale up server resources',
+    'Review recent code changes',
+    'Enable auto-scaling',
+    'Clear cache and rebuild'
+  ];
+  
+  return recommendations[Math.floor(Math.random() * recommendations.length)];
+}

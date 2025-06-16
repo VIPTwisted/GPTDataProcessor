@@ -1,0 +1,124 @@
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import GlobalOverview from './views/GlobalOverview';
+import ActionsPlaybooksView from './views/ActionsPlaybooksView';
+import FinanceOverviewView from './views/FinanceOverviewView';
+import OperationsOverviewView from './views/OperationsOverviewView';
+import EcommerceOverviewView from './views/EcommerceOverviewView';
+import ExecutionCenterView from './views/ExecutionCenterView';
+import SupportOverviewView from './views/SupportOverviewView';
+import MarketingOverviewView from './views/MarketingOverviewView';
+import HROverviewView from './views/HROverviewView';
+import SocialOverviewView from './views/SocialOverviewView';
+import RealtimeDataContext from './context/RealtimeDataContext';
+import VoiceCommandEngine from './components/system/VoiceCommandEngine';
+import './App.css';
+import SupplyChainOverviewView from './views/SupplyChainOverviewView'; // Import the new component
+import PlaybookEditorView from './views/PlaybookEditorView';
+import ActionQueueView from './views/ActionQueueView';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginForm from './components/auth/LoginForm';
+import AIBrainTestView from './views/AIBrainTestView';
+import GlobalKPIHealthView from './views/GlobalKPIHealthView';
+import ReasonGraphView from './views/ReasonGraphView';
+import SystemGridView from './views/SystemGridView';
+import LogViewerView from './views/LogViewerView';
+import TraceView from './views/TraceView';
+import DiagnosticsView from './views/DiagnosticsView';
+import { AutopilotProvider } from './context/AutopilotContext';
+import AgentCouncilView from './views/AgentCouncilView';
+import RepDashboardView from './views/RepDashboardView';
+import LeaderboardView from './views/LeaderboardView';
+import TeamAnalyticsView from './views/TeamAnalyticsView';
+import RepActivityView from './views/RepActivityView';
+import RepAiCopilotView from './views/RepAiCopilotView';
+import WorkflowBuilderView from './views/WorkflowBuilderView';
+import OrgHealthView from './views/OrgHealthView';
+import SelfHealTimelineView from './views/SelfHealTimelineView';
+import GPTTierManagementView from './views/GPTTierManagementView';
+import MultilingualTestView from './views/MultilingualTestView';
+import { LanguageProvider } from './context/LanguageContext';
+
+function App() {
+  const handleToggleTheme = () => {
+    // Add theme toggle logic here
+    console.log('Theme toggle requested via voice');
+  }
+  const handleTriggerSummary = () => {
+    const speak = window.speechSynthesis;
+    if (speak && typeof speak.speak === 'function') {
+      const summary = new SpeechSynthesisUtterance("Your current global status is healthy. No critical anomalies. AI projects 95% stability in the next 24 hours.");
+      speak.speak(summary);
+    }
+  }
+  return (
+    <AuthProvider>
+      <AutopilotProvider>
+        <RealtimeDataContext>
+          <LanguageProvider>
+            <Router>
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <Routes>
+                  <Route path="/login" element={<LoginForm />} />
+                  <Route path="/" element={<GlobalOverview />} />
+                  <Route path="/actions" element={<ProtectedRoute roles={['admin']}><ActionsPlaybooksView /></ProtectedRoute>} />
+                  <Route path="/finance" element={<ProtectedRoute roles={['admin', 'finance']}><FinanceOverviewView /></ProtectedRoute>} />
+                  <Route path="/operations" element={<ProtectedRoute roles={['admin', 'ops']}><OperationsOverviewView /></ProtectedRoute>} />
+                  <Route path="/ecommerce" element={<EcommerceOverviewView />} />
+                  <AutopilotProvider>
+                    <Route path="/execution" element={<ExecutionCenterView />} />
+                    <Route path="/kpi" element={<GlobalKPIHealthView />} />
+                    <Route path="/reason-graph" element={<ReasonGraphView />} />
+                    <Route path="/grid" element={<SystemGridView />} />
+                    <Route path="/logs" element={<LogViewerView />} />
+                    <Route path="/trace" element={<TraceView />} />
+                    <Route path="/diagnostics" element={<DiagnosticsView />} />
+                  </AutopilotProvider>
+                  <Route path="/support" element={<SupportOverviewView />} />
+                  <Route path="/marketing" element={<MarketingOverviewView />} />
+                  <Route path="/hr" element={<ProtectedRoute roles={['admin', 'hr']}><HROverviewView /></ProtectedRoute>} />
+                  <Route path="/social" element={<SocialOverviewView />} />
+                  <Route path="/supply-chain" element={<SupplyChainOverviewView />} />
+                  <Route path="/playbooks/create" element={<ProtectedRoute roles={['admin']}><PlaybookEditorView /></ProtectedRoute>} />
+                  <Route path="/actions/queue" element={<ProtectedRoute roles={['admin']}><ActionQueueView /></ProtectedRoute>} />
+                  <Route path="/ai-brain" element={<ProtectedRoute roles={['admin']}><AIBrainTestView /></ProtectedRoute>} />
+                  <Route path="/actions/playbooks" element={<ActionsPlaybooksView />} />
+                  <Route path="/system/grid" element={<SystemGridView />} />
+                  <Route path="/diagnostics" element={<DiagnosticsView />} />
+                  <Route path="/logs" element={<LogViewerView />} />
+                  <Route path="/trace" element={<TraceView />} />
+
+                  {/* Phase 10: Multi-Agent Coordination */}
+                  <Route path="/strategy/agents" element={<AgentCouncilView />} />
+
+                  {/* Phase 11: Frontline Rep Tools */}
+                  <Route path="/rep" element={<RepDashboardView />} />
+
+                  {/* Phase 14: Gamification */}
+                  <Route path="/leaderboard" element={<LeaderboardView />} />
+
+                  {/* Phase 19-28: Advanced AI Features */}
+                  <Route path="/team-analytics" element={<TeamAnalyticsView />} />
+                  <Route path="/rep-activity" element={<RepActivityView />} />
+                  <Route path="/ai-copilot" element={<RepAiCopilotView />} />
+                  <Route path="/workflow-builder" element={<WorkflowBuilderView />} />
+                  <Route path="/org-health" element={<OrgHealthView />} />
+                  <Route path="/self-heal" element={<SelfHealTimelineView />} />
+                  <Route path="/admin/gpt-tiers" element={<GPTTierManagementView />} />
+                  <Route path="/multilingual" element={<MultilingualTestView />} />
+                </Routes>
+                <VoiceCommandEngine
+                  onToggleTheme={handleToggleTheme}
+                  onTriggerSummary={handleTriggerSummary}
+                />
+              </div>
+            </Router>
+          </LanguageProvider>
+        </RealtimeDataContext>
+      </AutopilotProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,184 @@
+🛡️ PHASE 7 MODULES OVERVIEW
+Subphase	Feature	Description
+7.1	Unified Log Viewer	Real-time aggregated logs from AI agents, playbooks, modules
+7.2	Distributed Tracing Engine	Trace execution paths across GPT, API, UI modules
+7.3	AI Anomaly Detection in Logs	GPT scans logs for outliers and hidden issues
+7.4	Core Web Vitals + Performance	Frontend perf and Netlify function metrics
+7.5	Diagnostics UI + Latency Graph	Drill into issues by component in real-time
+
+✅ PHASE 7.1: UNIFIED LOG VIEWER UI
+Create views/LogViewerView.jsx
+jsx
+Copy
+Edit
+// src/views/LogViewerView.jsx
+import React, { useEffect, useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const mockLogs = [
+  {
+    id: 'log-001',
+    timestamp: '2025-06-15T14:12:00Z',
+    source: 'GPT-Agent',
+    type: 'Playbook Executed',
+    context: 'Ecommerce scaling playbook triggered by GPT',
+    status: 'Success',
+    confidence: 0.93
+  },
+  {
+    id: 'log-002',
+    timestamp: '2025-06-15T13:59:00Z',
+    source: 'Human Admin',
+    type: 'Approval',
+    context: 'Marketing budget freeze approved',
+    status: 'Executed',
+    confidence: null
+  },
+  {
+    id: 'log-003',
+    timestamp: '2025-06-15T13:50:00Z',
+    source: 'Support Module',
+    type: 'Anomaly',
+    context: 'Ticket spike flagged for weekend hours',
+    status: 'Flagged',
+    confidence: 0.77
+  }
+];
+
+const LogViewerView = () => {
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    setLogs(mockLogs); // Future: fetch('/api/logs')
+  }, []);
+
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Unified System Logs</h1>
+      <AnimatedCard>
+        <ul className="text-sm divide-y divide-gray-200 dark:divide-gray-700">
+          {logs.map((log) => (
+            <li key={log.id} className="py-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-semibold text-gray-800 dark:text-white">{log.type}</span>
+                <span className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleString()}</span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300">{log.context}</p>
+              <div className="text-xs mt-1 text-gray-500 flex justify-between">
+                <span>Source: {log.source}</span>
+                {log.confidence !== null && (
+                  <span>Confidence: {(log.confidence * 100).toFixed(0)}%</span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default LogViewerView;
+Add route in App.js:
+
+js
+Copy
+Edit
+import LogViewerView from './views/LogViewerView';
+<Route path="/logs" element={<LogViewerView />} />
+✅ PHASE 7.2: DISTRIBUTED TRACE VIEWER
+Trace a request across GPT → Decision → Execution → Notification → Playbook.
+
+Create views/TraceView.jsx
+jsx
+Copy
+Edit
+// src/views/TraceView.jsx
+import React from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const traceSteps = [
+  { label: 'GPT Trigger', component: 'Reason Engine', time: '14:12:01', latency: 140 },
+  { label: 'Playbook ID Selected', component: 'Orchestrator Brain', time: '14:12:03', latency: 320 },
+  { label: 'Playbook Executed', component: 'Execute API', time: '14:12:06', latency: 210 },
+  { label: 'Slack Notified', component: 'Webhook Dispatcher', time: '14:12:07', latency: 70 }
+];
+
+const TraceView = () => {
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Execution Trace</h1>
+      <AnimatedCard>
+        <ol className="border-l-2 border-indigo-600 space-y-6 ml-3 pl-6">
+          {traceSteps.map((step, i) => (
+            <li key={i}>
+              <div className="flex justify-between">
+                <h4 className="font-semibold text-indigo-700 dark:text-indigo-300">{step.label}</h4>
+                <p className="text-xs text-gray-500">Latency: {step.latency}ms</p>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Component: {step.component} — {step.time}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default TraceView;
+Route:
+
+js
+Copy
+Edit
+import TraceView from './views/TraceView';
+<Route path="/trace" element={<TraceView />} />
+✅ PHASE 7.3: AI-POWERED ANOMALY INSPECTION (GPT)
+This is already partially implemented in Phase 4. Add a function like:
+
+js
+Copy
+Edit
+// netlify/functions/inspect/anomaly-review.js
+exports.handler = async () => {
+  const mockLogBatch = [
+    'API latency exceeded 300ms at 14:10',
+    'Redis cache cleared',
+    'Playbook executed: ecommerce-scale-v2',
+    'Slack webhook failed (502)'
+  ];
+
+  const prompt = `
+You are an AI security analyst. Given these system logs, identify any anomalies, possible root causes, and recommended action.
+
+Logs:
+${mockLogBatch.join('\n')}
+
+Respond with structured JSON.
+`;
+
+  // ... send to GPT as in other functions
+};
+✅ PHASE 7.4: PERFORMANCE METRICS VIEW
+Use Netlify build stats, Core Web Vitals, or Replit ping API.
+
+Mock view can show:
+
+Average Function Latency
+
+Top Slow Routes
+
+Memory Usage Trends
+
+Frontend LCP / FID
+
+✅ PHASE 7.5: DIAGNOSTICS DASHBOARD (Coming)
+We'll build a single screen with:
+
+System Pulse
+
+High-latency alerts
+
+AI diagnosis box

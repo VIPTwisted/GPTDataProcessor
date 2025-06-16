@@ -1,0 +1,114 @@
+🔥 Continuing with PHASE 9.2 — AI PERSONA GENERATOR
+
+This module allows you to generate full GPT personas per brand, team, or user type.
+
+🎭 PHASE 9.2: AI PERSONA GENERATOR ENGINE
+Feature	Description
+🧠 Persona Profile	Defines tone, style, rules, restricted responses
+💼 Role Aware	Adjusts for admin vs rep vs support agent
+💬 Prompt Generator	Builds GPT system prompt dynamically
+🔁 Stored in Brand Config	Used in GPT calls system-wide
+
+✅ Step 1: Extend /brands/brand-toyparty/config.json
+json
+Copy
+Edit
+"personas": {
+  "admin": {
+    "name": "Gemini Admin AI",
+    "tone": "executive, strategic, formal",
+    "signature": "🧠 Gemini Admin"
+  },
+  "rep": {
+    "name": "FlirtBot",
+    "tone": "cheeky, witty, confident",
+    "signature": "💋 ToyRep AI"
+  },
+  "support": {
+    "name": "Caring Concierge",
+    "tone": "empathetic, helpful, warm",
+    "signature": "🛟 ToySupport AI"
+  }
+}
+✅ Step 2: Create Hook: usePersonaPrompt.js
+js
+Copy
+Edit
+// src/hooks/usePersonaPrompt.js
+import { useAuth } from '../context/AuthContext';
+import { useBrandConfig } from './useBrandConfig';
+
+export const usePersonaPrompt = () => {
+  const { user } = useAuth();
+  const brand = useBrandConfig('toyparty');
+  if (!brand || !user) return {};
+
+  const role = user.role || 'rep';
+  const persona = brand.personas?.[role] || brand.gptPersona;
+
+  const prompt = `
+You are ${persona.name}, the AI for ${brand.displayName}.
+Use a tone that is ${persona.tone}.
+Always sign responses with: ${persona.signature}
+Context: role = ${role}, brand = ${brand.brandId}
+`;
+
+  return { prompt, persona };
+};
+✅ Now any GPT function can do:
+
+js
+Copy
+Edit
+const { prompt } = usePersonaPrompt();
+gptCall({ systemPrompt: prompt });
+✅ Step 3: Simulate in UI
+Create views/PersonaSimulatorView.jsx (admin-only):
+
+jsx
+Copy
+Edit
+import React, { useState } from 'react';
+import { usePersonaPrompt } from '../hooks/usePersonaPrompt';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const PersonaSimulatorView = () => {
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const { prompt, persona } = usePersonaPrompt();
+
+  const simulate = async () => {
+    const res = await fetch('/api/gpt/test', {
+      method: 'POST',
+      body: JSON.stringify({ systemPrompt: prompt, input })
+    });
+    const json = await res.json();
+    setOutput(json.reply);
+  };
+
+  return (
+    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Persona Simulator ({persona?.name})</h1>
+      <AnimatedCard>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="w-full px-4 py-2 mb-4 border rounded"
+          placeholder="Ask the AI..."
+        />
+        <button onClick={simulate} className="px-4 py-2 bg-indigo-600 text-white rounded">Test GPT</button>
+        <div className="mt-4 text-sm text-gray-800 dark:text-white">
+          <pre>{output}</pre>
+        </div>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default PersonaSimulatorView;
+✅ PHASE 9.2 COMPLETE — AI PERSONA ENGINE
+Component	Feature
+✅ Persona per role	Admin, rep, support get distinct tones
+✅ Hook for system prompt	Used in every GPT call
+✅ Simulator UI	Try persona in real time
+✅ GPT-Ready	Can feed into Orchestrator, support, dashboard bots

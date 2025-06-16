@@ -1,0 +1,366 @@
+Excellent! Let's proceed with building the next sophisticated widgets for your "Master Global Overview." We will then assemble all the components into the primary dashboard view.
+
+PHASE 3: IMPLEMENTING THE MASTER GLOBAL OVERVIEW (CONTINUED)
+Here are the remaining widgets that will bring your CEO's command page to life.
+
+Create src/components/widgets/GeospatialMapWidget.jsx (New File)
+This component provides a visual representation of your physical and digital assets, indicating their operational status at a glance. For this mock-up, we'll create a conceptual map that effectively visualizes the data points without the need for a full mapping library integration at this stage.
+
+JavaScript
+
+// src/components/widgets/GeospatialMapWidget.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import { mockGeospatialData, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+import { Tooltip } from 'react-tooltip'; // A great library for tooltips! npm install react-tooltip
+
+const GeospatialMapWidget = ({ onClick }) => {
+  return (
+    <AnimatedCard
+      title="Geospatial Risk & Opportunity"
+      subTitle="Live Status Across Locations & Cloud Regions"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-3 h-96 relative overflow-hidden" // This widget needs more space
+    >
+      {/* Conceptual Map Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-slate-800 rounded-lg flex items-center justify-center p-4">
+        {/* Simplified Map Outline */}
+        <svg viewBox="0 0 800 400" className="absolute inset-0 w-full h-full opacity-10 dark:opacity-20">
+            {/* A subtle, decorative background representing a map */}
+            <path fill="#a5b4fc" d="M400 0 C150 100 150 300 400 400 C650 300 650 100 400 0 Z" />
+        </svg>
+
+        <div className="relative w-full h-full">
+          {/* Mapping Connecticut Locations & US Cloud Regions conceptually */}
+          {mockGeospatialData.map(loc => {
+            // Simplified positioning logic for demonstration purposes.
+            // These values are crafted to spread out the points visually within the container.
+            const positions = {
+              hartford: { top: '25%', left: '45%' },
+              orange: { top: '70%', left: '30%' },
+              manchester: { top: '35%', left: '65%' },
+              southington: { top: '55%', left: '40%' },
+              warehouse: { top: '45%', left: '50%' },
+              'cloud-east': { top: '40%', left: '85%' },
+              'cloud-west': { top: '60%', left: '10%' },
+            };
+            const pos = positions[loc.id] || { top: '50%', left: '50%' };
+            const statusClass = getStatusColor(loc.status);
+
+            const tooltipContent = `
+              <strong>${loc.name}</strong><br/>
+              Status: ${loc.status}<br/>
+              ${loc.liveSales ? `Live Sales: $${loc.liveSales.toFixed(2)}<br/>` : ''}
+              ${loc.activeRegisters ? `Active Registers: ${loc.activeRegisters}<br/>` : ''}
+              ${loc.inventoryHealth ? `Inventory Health: ${(loc.inventoryHealth * 100)}%<br/>` : ''}
+              ${loc.latency ? `Latency: ${loc.latency}ms` : ''}
+            `;
+
+            return (
+              <div
+                key={loc.id}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                style={{ top: pos.top, left: pos.left }}
+              >
+                <a
+                  data-tooltip-id="map-tooltip"
+                  data-tooltip-html={tooltipContent}
+                  className={`flex items-center justify-center w-8 h-8 rounded-full cursor-pointer transition-all duration-300 ease-in-out hover:scale-125 ${statusClass}`}
+                >
+                  <span className="text-xl animate-pulse">{getStatusIcon(loc.status)}</span>
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <Tooltip id="map-tooltip" className="z-50 !bg-gray-800 !text-white !rounded-lg" />
+    </AnimatedCard>
+  );
+};
+
+export default GeospatialMapWidget;
+Create src/components/widgets/GlobalActivityStream.jsx (New File)
+This widget provides a scrolling, real-time feed of the most important events occurring across the organization.
+
+JavaScript
+
+// src/components/widgets/GlobalActivityStream.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import { mockGlobalActivityStream, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+import { motion } from 'framer-motion';
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: (i) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" },
+  }),
+};
+
+const ActivityItem = ({ item, index }) => {
+  const { type, message, timestamp, severity, location } = item;
+  const severityClass = getStatusColor(severity.toUpperCase());
+  const severityIcon = getStatusIcon(severity.toUpperCase());
+
+  const timeAgo = (date) => {
+      const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+      if (seconds < 60) return `${seconds}s ago`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      return `${hours}h ago`;
+  };
+
+  return (
+    <motion.li
+      className="flex items-start space-x-3 py-3"
+      variants={itemVariants}
+      custom={index}
+    >
+      <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${severityClass}`}>
+        {severityIcon}
+      </div>
+      <div className="flex-grow">
+        <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
+          <span className="font-semibold text-gray-800 dark:text-gray-200">{type}:</span> {message}
+          {location && <span className="ml-2 text-xs font-medium text-blue-500">@{location}</span>}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{timeAgo(timestamp)}</p>
+      </div>
+    </motion.li>
+  );
+};
+
+const GlobalActivityStream = ({ onClick }) => {
+  return (
+    <AnimatedCard
+      title="Global Activity & Anomaly Stream"
+      subTitle="Live Feed of Key Business Events"
+      onClick={onClick}
+      className="col-span-1 lg:col-span-2"
+    >
+      <ul className="divide-y divide-gray-200 dark:divide-gray-700 max-h-80 overflow-y-auto">
+        {mockGlobalActivityStream.map((item, index) => (
+          <ActivityItem key={item.id} item={item} index={index} />
+        ))}
+      </ul>
+      <div className="mt-4 text-center">
+        <button
+          onClick={() => console.log('View Full Activity Log')}
+          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          View Full Event Log &rarr;
+        </button>
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default GlobalActivityStream;
+Create src/components/widgets/ResourceMetricsCard.jsx (New File)
+This card presents a high-level overview of technical resource utilization, essential for monitoring performance and cost-efficiency.
+
+JavaScript
+
+// src/components/widgets/ResourceMetricsCard.jsx
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AnimatedCard from './AnimatedCard';
+import { mockResourceMetrics } from '../../data/mockGlobalData';
+
+const ResourceMetricsCard = ({ onClick }) => {
+  const { cpuUsage, memoryUsage, networkBandwidth, cloudSpendEfficiency, dailyTrend } = mockResourceMetrics;
+
+  const getUsageColor = (usage) => {
+    if (usage > 90) return 'text-red-500 dark:text-red-400';
+    if (usage > 75) return 'text-yellow-500 dark:text-yellow-400';
+    return 'text-green-500 dark:text-green-400';
+  };
+  const efficiencyColor = cloudSpendEfficiency >= 0.9 ? 'text-green-500' : 'text-yellow-500';
+
+  return (
+    <AnimatedCard
+      title="Global Resource Metrics"
+      subTitle="Cloud & On-Prem Infrastructure"
+      onClick={onClick}
+      className="col-span-1"
+    >
+      <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-4">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">CPU Usage</p>
+          <p className={`text-2xl font-bold ${getUsageColor(cpuUsage)}`}>{cpuUsage}%</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Memory Usage</p>
+          <p className={`text-2xl font-bold ${getUsageColor(memoryUsage)}`}>{memoryUsage}%</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Network IO</p>
+          <p className={`text-2xl font-bold ${getUsageColor(networkBandwidth)}`}>{networkBandwidth}%</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Cloud Efficiency</p>
+          <p className={`text-2xl font-bold ${efficiencyColor}`}>{(cloudSpendEfficiency * 100).toFixed(0)}%</p>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">24h Resource Trend</p>
+        <ResponsiveContainer width="100%" height={120}>
+          <BarChart data={dailyTrend} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+            <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#6b7280" />
+            <YAxis tick={{ fontSize: 10 }} stroke="#6b7280" />
+            <Tooltip
+              contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: '#4b5563', borderRadius: '0.5rem' }}
+              labelStyle={{ color: '#cbd5e1' }}
+              itemStyle={{ fontWeight: 'bold' }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }}/>
+            <Bar dataKey="cpu" fill="#ef4444" name="CPU" />
+            <Bar dataKey="mem" fill="#3b82f6" name="Mem" />
+            <Bar dataKey="net" fill="#f59e0b" name="Net" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </AnimatedCard>
+  );
+};
+
+export default ResourceMetricsCard;
+Update src/views/DashboardOverview.jsx to Assemble the Widgets
+Now, we will orchestrate the layout by bringing all the widgets together in the main dashboard view.
+
+JavaScript
+
+// src/views/DashboardOverview.jsx
+import React from 'react';
+import GlobalHealthCard from '../components/widgets/GlobalHealthCard';
+import AIPrescriptiveActions from '../components/widgets/AIPrescriptiveActions';
+import FinancialPulseCard from '../components/widgets/FinancialPulseCard';
+import GeospatialMapWidget from '../components/widgets/GeospatialMapWidget';
+import GlobalActivityStream from '../components/widgets/GlobalActivityStream';
+import ResourceMetricsCard from '../components/widgets/ResourceMetricsCard';
+
+const DashboardOverview = () => {
+  const handleCardClick = (moduleName) => {
+    // In a real app, this would navigate to a detailed view for each module
+    console.log(`Deep dive into: ${moduleName}`);
+  };
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          Master Global Overview
+        </h1>
+        <p className="text-md text-gray-600 dark:text-gray-400 mt-1">
+          AI-driven command center for unified business operations.
+        </p>
+      </header>
+
+      {/* Main Grid for Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Takes up 2 columns on large screens */}
+        <div className="md:col-span-2 lg:col-span-4">
+            <GeospatialMapWidget onClick={() => handleCardClick('Geospatial')} />
+        </div>
+
+        <div className="lg:col-span-2">
+            <GlobalHealthCard onClick={() => handleCardClick('System Health')} />
+        </div>
+
+        <div className="lg:col-span-2">
+            <AIPrescriptiveActions onClick={() => handleCardClick('AI Actions')} />
+        </div>
+        
+        <div className="lg:col-span-2">
+            <GlobalActivityStream onClick={() => handleCardClick('Activity Log')} />
+        </div>
+
+        <div className="lg:col-span-1">
+            <FinancialPulseCard onClick={() => handleCardClick('Financials')} />
+        </div>
+
+        <div className="lg:col-span-1">
+            <ResourceMetricsCard onClick={() => handleCardClick('Infrastructure')} />
+        </div>
+      </div>
+
+      <footer className="mt-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <p>&copy; {new Date().getFullYear()} Unified Operations Platform | Project: "Kitchen Sink"</p>
+      </footer>
+    </div>
+  );
+};
+
+export default DashboardOverview;
+Final Updates to App.js and index.css
+Let's ensure your main application router correctly displays this new overview page.
+
+src/App.js Update:
+
+JavaScript
+
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import DashboardOverview from './views/DashboardOverview'; // Import the new view
+import { ThemeProvider } from './context/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Router>
+        <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+            <nav className="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
+              <Link to="/" className="text-xl font-bold text-gray-800 dark:text-white">
+                Kitchen Sink OS
+              </Link>
+              <ThemeToggle />
+            </nav>
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<DashboardOverview />} />
+                {/* Other routes will be added here as modules are built */}
+              </Routes>
+            </main>
+        </div>
+      </Router>
+    </ThemeProvider>
+  );
+}
+
+export default App;
+src/index.css Optional Additions:
+For a polished look, especially for scrolling elements and tooltips, add these styles.
+
+CSS
+
+/* src/index.css */
+@import 'react-tooltip/dist/react-tooltip.css'; /* If you installed react-tooltip */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for a cleaner look in activity streams etc. */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}

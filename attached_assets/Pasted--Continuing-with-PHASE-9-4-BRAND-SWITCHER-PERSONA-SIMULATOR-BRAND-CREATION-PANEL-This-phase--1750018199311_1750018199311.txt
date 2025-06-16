@@ -1,0 +1,122 @@
+🔥 Continuing with PHASE 9.4: BRAND SWITCHER + PERSONA SIMULATOR + BRAND CREATION PANEL
+
+This phase enables:
+
+Admins to switch between brand contexts in real-time
+
+Simulate AI behavior per brand and role
+
+Dynamically spin up new brand configs for instant onboarding
+
+🧭 PHASE 9.4 — BRAND SWITCHER + SIMULATOR
+✅ Step 1: Create components/BrandSwitcher.jsx
+jsx
+Copy
+Edit
+// src/components/BrandSwitcher.jsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const brands = ['toyparty', 'honeyglow', 'vibevault'];
+
+const BrandSwitcher = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="mb-6 flex gap-3">
+      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Switch Brand:</label>
+      <select
+        onChange={(e) => navigate(`/${e.target.value}`)}
+        className="px-3 py-1 border rounded bg-white dark:bg-gray-800"
+      >
+        <option value="">Select...</option>
+        {brands.map((id) => (
+          <option key={id} value={id}>{id}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+export default BrandSwitcher;
+Embed this at the top of any /dashboard, /grid, or /execution view to support live switching.
+
+✅ Step 2: Extend PersonaSimulatorView.jsx with Brand Awareness
+Update simulator to accept brandId and reload correct persona prompt:
+
+jsx
+Copy
+Edit
+import { useParams } from 'react-router-dom';
+import { usePersonaPrompt } from '../hooks/usePersonaPrompt';
+
+const PersonaSimulatorView = () => {
+  const { brandId } = useParams();
+  const { prompt, persona } = usePersonaPrompt(brandId || 'toyparty');
+
+  // rest of UI remains the same
+};
+✅ Now you can visit /toyparty/simulator, /honeyglow/simulator, etc.
+Simulate GPT behavior across brand + role personas in seconds.
+
+✅ Step 3: Admin-Only Brand Generator UI
+jsx
+Copy
+Edit
+// src/views/CreateBrandView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const CreateBrandView = () => {
+  const [brandId, setBrandId] = useState('');
+  const [color, setColor] = useState('#000000');
+
+  const generate = async () => {
+    const config = {
+      brandId,
+      displayName: brandId.toUpperCase(),
+      primaryColor: color,
+      logo: '/logos/default.svg',
+      gptPersona: { tone: 'neutral', signature: '🤖 BrandBot' },
+      modules: { finance: true, support: true, hr: true }
+    };
+
+    await fetch(`/brands/brand-${brandId}/config.json`, {
+      method: 'PUT', // only works in local FS; real setup needs S3 or DB
+      body: JSON.stringify(config),
+    });
+
+    alert(`✅ Brand ${brandId} created.`);
+  };
+
+  return (
+    <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">New Brand Generator</h1>
+      <AnimatedCard>
+        <input
+          value={brandId}
+          onChange={(e) => setBrandId(e.target.value)}
+          placeholder="brand ID"
+          className="mb-2 px-3 py-2 border w-full rounded"
+        />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          className="mb-4 w-20 h-10"
+        />
+        <button onClick={generate} className="px-4 py-2 bg-indigo-600 text-white rounded">Create Brand</button>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default CreateBrandView;
+NOTE: This would require file system or database persistence in real production.
+
+✅ PHASE 9.4 COMPLETE
+Component	Feature
+✅ Brand switcher	Dropdown UI for instant route context
+✅ Persona simulator	GPT prompt tester per brand/role
+✅ Brand creator UI	Spin up brand configs (admin only)
+✅ GPT-safe routing	Prompts + modules scoped per brandId

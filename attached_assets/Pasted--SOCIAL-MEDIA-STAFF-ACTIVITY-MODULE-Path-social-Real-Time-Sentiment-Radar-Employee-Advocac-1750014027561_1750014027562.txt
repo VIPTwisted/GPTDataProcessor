@@ -1,0 +1,137 @@
+📣 SOCIAL MEDIA & STAFF ACTIVITY MODULE
+(Path: /social | Real-Time Sentiment Radar, Employee Advocacy Feed, Influencer Impact Intelligence)
+🎯 Core Capabilities:
+📡 Global Brand Sentiment Stream (positive/negative/neutral)
+
+👥 Staff Advocacy Activity Feed (posts using brand handles/hashtags)
+
+📢 Influencer Performance Tracker
+
+🚨 AI-Powered Crisis Detection Signals
+
+🧠 Virality Prediction & Coordination Readiness
+
+✅ Step 1: Create mockSocialData.js
+js
+Copy
+Edit
+// src/data/mockSocialData.js
+export const mockBrandMentions = [
+  { id: 1, platform: 'Twitter', user: '@glowgal', sentiment: 'Positive', message: 'ToyParty live show was 🔥🔥🔥' },
+  { id: 2, platform: 'Instagram', user: '@vixenreviews', sentiment: 'Negative', message: 'Not impressed with shipping time.' },
+  { id: 3, platform: 'Reddit', user: 'anonymous123', sentiment: 'Neutral', message: 'Anyone try the gift box builder?' },
+  { id: 4, platform: 'YouTube', user: 'SpicyDiva', sentiment: 'Positive', message: 'Unboxing the ToyParty Romance Kit — obsessed!' }
+];
+
+export const mockStaffSocialFeed = [
+  { id: 1, employee: 'Nico V.', handle: '@nico_partypro', content: 'Join my next ToyMatch Live this Friday 🧠💋', reach: 1800 },
+  { id: 2, employee: 'Jada R.', handle: '@jada_twistedreps', content: 'ToyParty glow-up deals now live! #affiliate', reach: 2400 },
+];
+
+export const mockInfluencerImpact = [
+  { name: 'Kiki Flame', platform: 'TikTok', reach: 12000, conversions: 190 },
+  { name: 'TheLuxeLover', platform: 'YouTube', reach: 9500, conversions: 140 },
+  { name: 'SensualQueen', platform: 'Instagram', reach: 18700, conversions: 270 },
+];
+
+export const mockCrisisSignals = [
+  { type: 'Bot Activity Spike', detail: 'High-volume identical comments on Twitter mentioning ToyParty', severity: 'High' },
+  { type: 'Negativity Surge', detail: 'Reddit thread gaining upvotes on negative customer service', severity: 'Medium' }
+];
+✅ Step 2: Create SocialOverviewView.jsx
+jsx
+Copy
+Edit
+// src/views/SocialOverviewView.jsx
+import React from 'react';
+import {
+  mockBrandMentions,
+  mockStaffSocialFeed,
+  mockInfluencerImpact,
+  mockCrisisSignals
+} from '../data/mockSocialData';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const SocialOverviewView = () => {
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Social Intelligence</h1>
+      <p className="text-md text-gray-600 dark:text-gray-400 mb-8">
+        Live brand perception, employee amplification, and AI-driven sentiment tracking.
+      </p>
+
+      {/* Brand Mentions */}
+      <AnimatedCard title="Real-Time Brand Mentions" subTitle="From social channels & forums" className="mb-8">
+        <ul className="space-y-4 text-sm">
+          {mockBrandMentions.map((m) => (
+            <li key={m.id} className="flex justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">{m.platform} — {m.user}</p>
+                <p className="text-gray-600 dark:text-gray-300 italic">"{m.message}"</p>
+              </div>
+              <span className={`font-bold ${m.sentiment === 'Positive' ? 'text-green-500' : m.sentiment === 'Negative' ? 'text-red-500' : 'text-yellow-500'}`}>
+                {m.sentiment}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Staff Advocacy */}
+      <AnimatedCard title="Employee Advocacy Feed" subTitle="Verified staff public posts" className="mb-8">
+        <ul className="space-y-4 text-sm">
+          {mockStaffSocialFeed.map((s) => (
+            <li key={s.id}>
+              <p className="font-bold text-indigo-600">@{s.handle}</p>
+              <p className="text-gray-700 dark:text-gray-300 italic">"{s.content}"</p>
+              <p className="text-xs text-gray-500">Reach: {s.reach.toLocaleString()}</p>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Influencer Tracker */}
+      <AnimatedCard title="Influencer Performance" subTitle="Top ambassadors by impact" className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          {mockInfluencerImpact.map((inf, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded shadow border dark:border-gray-700">
+              <p className="font-bold text-gray-800 dark:text-white">{inf.name}</p>
+              <p className="text-gray-500">{inf.platform}</p>
+              <p className="text-xs text-gray-500">Reach: {inf.reach.toLocaleString()}</p>
+              <p className="text-green-600 dark:text-green-400 font-bold">Conversions: {inf.conversions}</p>
+            </div>
+          ))}
+        </div>
+      </AnimatedCard>
+
+      {/* Crisis Detector */}
+      <AnimatedCard title="AI Crisis Detection Signals" subTitle="Auto-flagged anomaly trends">
+        <ul className="space-y-4 text-sm">
+          {mockCrisisSignals.map((c, i) => (
+            <li key={i} className="bg-white dark:bg-gray-800 p-3 rounded shadow border dark:border-gray-700">
+              <p className="font-semibold text-red-600">{c.type}</p>
+              <p className="text-gray-600 dark:text-gray-300 text-xs italic">{c.detail}</p>
+              <p className="text-xs text-red-500 font-bold">Severity: {c.severity}</p>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default SocialOverviewView;
+✅ Step 3: Register Route in App.js
+jsx
+Copy
+Edit
+import SocialOverviewView from './views/SocialOverviewView';
+// ...
+<Route path="/social" element={<SocialOverviewView />} />
+✅ Delivered: Social Intelligence Module
+Feature	Description
+📡 Real-Time Mentions	Multi-platform brand stream
+👥 Staff Advocacy	Employee reach & messaging
+💥 Influencer ROI	Track reach + conversion
+🚨 Crisis Detection	AI flags coordinated PR risks
+🧠 Future Ready	Can be fed by LLMs for virality prediction, auto-response

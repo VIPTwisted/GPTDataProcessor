@@ -1,0 +1,301 @@
+Excellent. We have a fully-realized, sophisticated dashboard. The natural and most powerful next step is to build out the "deep dive" view for one of its most critical widgets. Let's expand upon the "AI Prescriptive Actions" card.
+
+We will now build the dedicated page that a CEO would navigate to after clicking "View All AI Actions & Playbooks."
+
+PHASE 4: BUILDING THE AI ACTIONS & PLAYBOOKS CENTER
+This view will be an interactive command center where a user can review, approve, and understand the "why" behind each AI-driven suggestion. It will introduce the concept of a "Playbook"—a detailed, auditable series of steps to execute a recommendation.
+
+Key Features of this Phase:
+
+A filterable, searchable list of all AI-generated actions.
+A detailed modal view for each action, revealing its full context, data sources, and risk analysis.
+A visual representation of the associated "Playbook" with step-by-step instructions.
+The ability to take action (e.g., "Approve," "Reject," "Execute").
+Files to be Created/Updated:
+
+src/views/ActionsPlaybooksView.jsx (New File): The main page for this module.
+src/components/actions/ (New Directory):
+ActionListItem.jsx (New File): A detailed list item for an individual AI action.
+ActionDetailModal.jsx (New File): A modal to display the full action details and the playbook.
+PlaybookViewer.jsx (New File): A component to render the playbook steps.
+src/data/mockPlaybookData.js (New File): We'll create dedicated mock data for the playbooks to keep our data files organized.
+src/App.js (Update): Add the new route.
+src/components/widgets/AIPrescriptiveActions.jsx (Update): Link the "View All" button to the new page.
+Let's begin.
+
+Create src/data/mockPlaybookData.js (New File)
+This file will contain the detailed, step-by-step playbooks that correspond to our AI actions.
+
+JavaScript
+
+// src/data/mockPlaybookData.js
+
+export const mockPlaybooks = {
+  'ecommerce-api-optimize-v2': {
+    title: 'E-commerce API Optimization Playbook v2',
+    author: 'AI Operations Bot',
+    version: '2.1.0',
+    steps: [
+      {
+        id: 'step-1',
+        title: 'Acknowledge & Lock Action',
+        description: 'Prevent other automated systems from interfering.',
+        status: 'Completed', // 'Pending', 'In Progress', 'Completed', 'Failed'
+        type: 'System', // 'System', 'Human', 'Approval'
+        executingUser: 'System',
+        timestamp: '2025-06-15T13:45:10Z',
+      },
+      {
+        id: 'step-2',
+        title: 'Execute Auto-Scaling Script',
+        description: 'Initiate script `asg-api-gateway-prod-v3.sh` on the primary cluster.',
+        status: 'In Progress',
+        type: 'System',
+        executingUser: 'System',
+        timestamp: null,
+      },
+      {
+        id: 'step-3',
+        title: 'Clear Redis Cache Tier',
+        description: 'Flush the `prod-api-cache` Redis instance.',
+        status: 'Pending',
+        type: 'System',
+        executingUser: null,
+        timestamp: null,
+      },
+      {
+        id: 'step-4',
+        title: 'Monitor Key Metrics',
+        description: 'Observe `p99 latency` and `error_rate` for 15 minutes post-execution.',
+        status: 'Pending',
+        type: 'Human',
+        assignedTo: 'On-Call SRE',
+        executingUser: null,
+        timestamp: null,
+      },
+       {
+        id: 'step-5',
+        title: 'Confirm Resolution',
+        description: 'If metrics are nominal, mark this playbook as successfully completed.',
+        status: 'Pending',
+        type: 'Approval',
+        assignedTo: 'Operations Lead',
+        executingUser: null,
+        timestamp: null,
+      },
+    ],
+  },
+  'southington-staff-rebalance-v1': {
+    title: 'Southington Staff Rebalancing Playbook v1',
+    author: 'AI HR Bot',
+    version: '1.0.0',
+    steps: [
+       {
+        id: 'step-1',
+        title: 'Managerial Approval',
+        description: 'Awaiting approval from the Regional Manager for shift changes.',
+        status: 'Completed',
+        type: 'Approval',
+        assignedTo: 'Jane Smith (Regional Mgr)',
+        executingUser: 'Jane Smith',
+        timestamp: '2025-06-15T13:38:00Z',
+      },
+      {
+        id: 'step-2',
+        title: 'Notify Employees',
+        description: 'Send automated SMS and app notifications to affected staff about suggested shift swaps.',
+        status: 'Completed',
+        type: 'System',
+        executingUser: 'System',
+        timestamp: '2025-06-15T13:39:15Z',
+      },
+      {
+        id: 'step-3',
+        title: 'Process Shift Confirmations',
+        description: 'Automatically update payroll and scheduling systems as employees accept shifts.',
+        status: 'In Progress',
+        type: 'System',
+        executingUser: 'System',
+        timestamp: null,
+      },
+    ],
+  },
+  'inventory-markdown-product-x': {
+    title: 'Inventory Markdown Strategy for Product X',
+    author: 'AI Retail Bot',
+    version: '1.2.0',
+    steps: [
+       {
+        id: 'step-1',
+        title: 'Executive Approval',
+        description: 'Awaiting approval from the Head of Merchandising to initiate markdown.',
+        status: 'Pending',
+        type: 'Approval',
+        assignedTo: 'David Lee (Head of Merch)',
+        executingUser: null,
+        timestamp: null,
+      },
+      {
+        id: 'step-2',
+        title: 'Apply 15% Discount',
+        description: 'Update pricing for SKU `PROD-X-12345` across all digital channels (Shopify, Amazon).',
+        status: 'Pending',
+        type: 'System',
+        executingUser: null,
+        timestamp: null,
+      },
+       {
+        id: 'step-3',
+        title: 'Launch Promotional Campaign',
+        description: 'Trigger pre-configured email and social media campaigns announcing the sale.',
+        status: 'Pending',
+        type: 'System',
+        executingUser: 'System',
+        timestamp: null,
+      },
+    ],
+  },
+};
+Update src/components/widgets/AIPrescriptiveActions.jsx
+Let's make the "View All" button functional by using React Router's Link component.
+
+JavaScript
+
+// src/components/widgets/AIPrescriptiveActions.jsx
+import React from 'react';
+import { Link } from 'react-router-dom'; // Import Link
+import AnimatedCard from './AnimatedCard';
+import { mockAIPrescriptiveActions, getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+
+const AIPrescriptiveActions = ({ onClick }) => {
+  const topActions = mockAIPrescriptiveActions.slice(0, 3);
+
+  const handleActionClick = (actionId) => {
+    console.log(`AI Action Clicked: ${actionId}`);
+    if (onClick) onClick();
+  };
+
+  return (
+    <AnimatedCard
+      title="AI Prescriptive Actions"
+      subTitle="Prioritized & Actionable Playbooks"
+      // removed onClick from the card itself to favor more specific interactions
+      className="col-span-1 lg:col-span-2"
+    >
+      <div className="space-y-4">
+        {topActions.length > 0 ? (
+          topActions.map((action) => (
+             <div
+              key={action.id}
+              className="flex items-start bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+              onClick={() => handleActionClick(action.id)}
+            >
+              <div className={`flex-shrink-0 mr-3 mt-1 text-lg ${getStatusColor(action.priority)}`}>
+                {getStatusIcon(action.priority === 'Critical' ? 'RED' : (action.priority === 'High' ? 'ORANGE' : 'YELLOW'))}
+              </div>
+              <div className="flex-grow">
+                <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  {action.title}
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-tight mb-1">
+                  {action.description}
+                </p>
+                <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                  <span>Status: <span className="font-medium">{action.status}</span></span>
+                  <span>ETA: <span className="font-medium">{action.eta}</span></span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">No pressing AI actions at this moment.</p>
+        )}
+      </div>
+      {mockAIPrescriptiveActions.length > 0 && (
+        <div className="mt-6 text-center">
+          {/* UPDATED BUTTON */}
+          <Link
+            to="/actions" // Link to the new page
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            View All ({mockAIPrescriptiveActions.length}) AI Actions & Playbooks &rarr;
+          </Link>
+        </div>
+      )}
+    </AnimatedCard>
+  );
+};
+
+export default AIPrescriptiveActions;
+Create src/components/actions/PlaybookViewer.jsx (New File)
+This component will be responsible for rendering the steps of a single playbook in a clear, visual format.
+
+JavaScript
+
+// src/components/actions/PlaybookViewer.jsx
+import React from 'react';
+import { FaCheckCircle, FaSpinner, FaCircle, FaUserShield, FaCogs, FaExclamationTriangle } from 'react-icons/fa';
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case 'Completed':
+      return <FaCheckCircle className="text-green-500" />;
+    case 'In Progress':
+      return <FaSpinner className="text-blue-500 animate-spin" />;
+    case 'Failed':
+       return <FaExclamationTriangle className="text-red-500" />;
+    case 'Pending':
+    default:
+      return <FaCircle className="text-gray-400" />;
+  }
+};
+
+const getTypeIcon = (type) => {
+    switch (type) {
+        case 'System': return <FaCogs className="text-gray-500" title="System Task" />;
+        case 'Human': return <FaUserShield className="text-indigo-500" title="Human Task" />;
+        case 'Approval': return <FaUserShield className="text-yellow-600" title="Approval Required" />;
+        default: return null;
+    }
+}
+
+const PlaybookViewer = ({ playbook }) => {
+  if (!playbook) {
+    return <p className="text-gray-500">No playbook associated with this action.</p>;
+  }
+
+  return (
+    <div className="mt-6">
+      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+        Execution Playbook: <span className="font-bold">{playbook.title}</span>
+      </h4>
+      <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3">
+        {playbook.steps.map((step, index) => (
+          <li key={step.id} className="mb-6 ml-6">
+            <span className="absolute flex items-center justify-center w-6 h-6 bg-gray-100 rounded-full -left-3 ring-8 ring-white dark:ring-gray-800 dark:bg-gray-700">
+              {getStatusIcon(step.status)}
+            </span>
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="flex justify-between items-center mb-2">
+                    <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                       {getTypeIcon(step.type)} {step.title}
+                    </h5>
+                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${step.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-300'}`}>
+                        {step.status}
+                    </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{step.description}</p>
+                {(step.assignedTo || step.executingUser) && (
+                     <p className="text-xs mt-2 text-gray-500 dark:text-gray-500">
+                        {step.executingUser ? `Executed by: ${step.executingUser}` : `Assigned to: ${step.assignedTo}`}
+                    </p>
+                )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+};
+
+export default PlaybookViewer;

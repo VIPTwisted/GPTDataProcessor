@@ -1,0 +1,122 @@
+🧠 PHASE 5.2: THE MASTER SYSTEM TILE GRID
+Element	Description
+🧱 Module Tiles	Each tile = a command module (finance, ecommerce, ops, etc.)
+🌡️ Live Status	Colors: 🟢 OK, 🟡 Warning, 🔴 Critical (mocked now)
+🧠 GPT Command Prompt	“What needs attention?” “Run ecommerce fix”
+⚙️ Tile Buttons	Drill into playbooks, trigger functions
+🚨 Alerts	Flag high-risk modules with animations (ping/shake)
+
+✅ Step 1: Create views/SystemGridView.jsx
+jsx
+Copy
+Edit
+// src/views/SystemGridView.jsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaHeartbeat, FaChartBar, FaCloud, FaStore, FaCogs, FaRobot, FaUsers } from 'react-icons/fa';
+
+const systemModules = [
+  { name: 'Finance', route: '/finance', icon: FaChartBar, status: 'OK' },
+  { name: 'Ecommerce', route: '/ecommerce', icon: FaStore, status: 'Critical' },
+  { name: 'HR', route: '/hr', icon: FaUsers, status: 'OK' },
+  { name: 'Operations', route: '/operations', icon: FaCogs, status: 'Warning' },
+  { name: 'Marketing', route: '/marketing', icon: FaChartBar, status: 'OK' },
+  { name: 'Support', route: '/support', icon: FaHeartbeat, status: 'OK' },
+  { name: 'AI Engine', route: '/execution', icon: FaRobot, status: 'OK' }
+];
+
+const statusColors = {
+  OK: 'bg-green-100 text-green-800',
+  Warning: 'bg-yellow-100 text-yellow-800',
+  Critical: 'bg-red-100 text-red-800 animate-pulse'
+};
+
+const SystemGridView = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">System Health Grid</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {systemModules.map((mod, i) => {
+          const Icon = mod.icon;
+          const color = statusColors[mod.status] || 'bg-gray-100';
+
+          return (
+            <div
+              key={i}
+              onClick={() => navigate(mod.route)}
+              className={`cursor-pointer p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:scale-105 transition transform duration-300 ${color}`}
+            >
+              <div className="flex items-center gap-4">
+                <Icon className="text-2xl" />
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">{mod.name}</p>
+                  <p className="text-xs text-gray-500">{mod.status}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default SystemGridView;
+✅ Step 2: Add Route in App.js
+jsx
+Copy
+Edit
+import SystemGridView from './views/SystemGridView';
+// ...
+<Route path="/grid" element={<SystemGridView />} />
+✅ Step 3: Optional: GPT Command Prompt (for the future)
+Create components/system/GPTPromptInput.jsx:
+
+jsx
+Copy
+Edit
+// src/components/system/GPTPromptInput.jsx
+import React, { useState } from 'react';
+
+const GPTPromptInput = ({ onSubmit }) => {
+  const [input, setInput] = useState('');
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (onSubmit) onSubmit(input);
+        setInput('');
+      }}
+      className="flex items-center gap-2 mt-6"
+    >
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        className="flex-1 px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 dark:bg-gray-800"
+        placeholder="Ask Orchestrator... (e.g. Run ecommerce fix)"
+      />
+      <button className="px-4 py-2 bg-indigo-600 text-white rounded">Submit</button>
+    </form>
+  );
+};
+
+export default GPTPromptInput;
+You can embed this anywhere (/grid, /execution, /dashboard) and tie it to:
+
+LLM prompt calls (GPT-4)
+
+Direct system triggers
+
+Quick-action playbook launches
+
+✅ Result: Your Command Tile Grid Is Now Active
+Module	Feature
+✅ Grid View	Clickable tiles, color-coded health
+✅ Live Routing	Drills into all modules
+✅ GPT-Ready Prompt	Submit instructions to AI
+✅ Alert Animations	Pulse on 🔴 modules
+

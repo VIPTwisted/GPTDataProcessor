@@ -1,0 +1,141 @@
+🛒 E-COMMERCE & MLM OPERATIONS MODULE
+(Path: /ecommerce | Funnel Intelligence, Churn Prediction, Product Heat, MLM Growth AI)
+🎯 Core Features:
+📉 Cart Abandonment Funnel — visualized by funnel stage
+
+🧠 Churn Prevention Forecast — predicted drop-off customers
+
+📈 Product Performance Heatmap — per SKU/category
+
+🌐 MLM Network Overview — growth trends, key leaders
+
+🎯 AI-ready architecture (plug GPT or ML models later)
+
+✅ Step 1: Create mockEcommerceData.js
+js
+Copy
+Edit
+// src/data/mockEcommerceData.js
+export const mockCartFunnel = [
+  { stage: 'Browse', count: 8200 },
+  { stage: 'Add to Cart', count: 4100 },
+  { stage: 'Begin Checkout', count: 2700 },
+  { stage: 'Payment Attempted', count: 2000 },
+  { stage: 'Order Completed', count: 1600 }
+];
+
+export const mockChurnRisk = [
+  { customerId: 'C-101', name: 'Alex Rivera', risk: 0.85, lastOrder: 'May 10' },
+  { customerId: 'C-237', name: 'Jordan Liu', risk: 0.72, lastOrder: 'Apr 22' },
+  { customerId: 'C-392', name: 'Taylor Gomez', risk: 0.66, lastOrder: 'Mar 29' }
+];
+
+export const mockProductPerformance = [
+  { sku: 'PR-X1', name: 'Product X', sales: 9200, returns: 300, rating: 4.6 },
+  { sku: 'PR-Y2', name: 'Product Y', sales: 7100, returns: 820, rating: 3.9 },
+  { sku: 'PR-Z3', name: 'Product Z', sales: 3800, returns: 120, rating: 4.2 },
+];
+
+export const mockMLMGrowth = [
+  { month: 'Jan', newLeads: 180, churned: 15 },
+  { month: 'Feb', newLeads: 260, churned: 30 },
+  { month: 'Mar', newLeads: 340, churned: 40 },
+  { month: 'Apr', newLeads: 380, churned: 55 },
+  { month: 'May', newLeads: 290, churned: 45 },
+];
+✅ Step 2: Create EcommerceOverviewView.jsx
+jsx
+Copy
+Edit
+// src/views/EcommerceOverviewView.jsx
+import React from 'react';
+import {
+  mockCartFunnel,
+  mockChurnRisk,
+  mockProductPerformance,
+  mockMLMGrowth
+} from '../data/mockEcommerceData';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+
+const EcommerceOverviewView = () => {
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">E-Commerce & MLM Intelligence</h1>
+      <p className="text-md text-gray-600 dark:text-gray-400 mb-8">
+        Funnel analytics, churn forecasts, product velocity, and MLM network trends.
+      </p>
+
+      {/* Cart Funnel */}
+      <AnimatedCard title="Cart Abandonment Funnel" subTitle="Session-to-Conversion Flow" className="mb-8">
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={mockCartFunnel}>
+            <XAxis dataKey="stage" stroke="#6B7280" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#3B82F6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </AnimatedCard>
+
+      {/* Churn Risk */}
+      <AnimatedCard title="Churn Prevention Radar" subTitle="High Risk Customer Forecasts" className="mb-8">
+        <ul className="space-y-4 text-sm">
+          {mockChurnRisk.map((c) => (
+            <li key={c.customerId} className="flex justify-between">
+              <div>
+                <p className="font-semibold text-gray-800 dark:text-white">{c.name}</p>
+                <p className="text-xs text-gray-500">Last Order: {c.lastOrder}</p>
+              </div>
+              <p className={`text-right font-bold ${c.risk > 0.8 ? 'text-red-500' : c.risk > 0.6 ? 'text-orange-500' : 'text-yellow-500'}`}>
+                Risk: {(c.risk * 100).toFixed(0)}%
+              </p>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Product Performance */}
+      <AnimatedCard title="Top Product Metrics" subTitle="Sales, Returns & Ratings" className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {mockProductPerformance.map((p) => (
+            <div key={p.sku} className="bg-white dark:bg-gray-800 p-4 rounded border dark:border-gray-700 shadow">
+              <h4 className="font-bold text-gray-800 dark:text-white">{p.name}</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Sales: {p.sales.toLocaleString()}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Returns: {p.returns}</p>
+              <p className="text-sm font-semibold text-green-500 dark:text-green-400">Rating: {p.rating}★</p>
+            </div>
+          ))}
+        </div>
+      </AnimatedCard>
+
+      {/* MLM Network Growth */}
+      <AnimatedCard title="MLM Network Growth" subTitle="Monthly Lead vs Churn Trend">
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={mockMLMGrowth}>
+            <XAxis dataKey="month" stroke="#6B7280" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="newLeads" fill="#10B981" name="New Leads" />
+            <Bar dataKey="churned" fill="#EF4444" name="Churned" />
+          </BarChart>
+        </ResponsiveContainer>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default EcommerceOverviewView;
+✅ Step 3: Route in App.js
+jsx
+Copy
+Edit
+import EcommerceOverviewView from './views/EcommerceOverviewView';
+// ...
+<Route path="/ecommerce" element={<EcommerceOverviewView />} />
+✅ Delivered:
+Module	Features
+🛒 Cart Funnel	Visual drop-off tracking from session to checkout
+🔮 Churn Radar	Top-risk customers flagged with AI scores
+📦 Product Matrix	SKU performance with returns and ratings
+🌱 MLM Network Tracker	Growth vs churn over time

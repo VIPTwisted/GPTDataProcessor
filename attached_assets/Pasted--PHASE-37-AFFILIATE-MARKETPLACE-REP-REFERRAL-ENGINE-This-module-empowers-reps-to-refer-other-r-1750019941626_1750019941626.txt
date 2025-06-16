@@ -1,0 +1,90 @@
+🚀 PHASE 37: AFFILIATE MARKETPLACE + REP REFERRAL ENGINE
+
+This module empowers reps to refer other reps, track downstream earnings, and see their affiliate tree — perfect for gamified network growth.
+
+✅ 37.1 — Affiliate Marketplace Directory
+jsx
+Copy
+Edit
+// src/views/AffiliateDirectoryView.jsx
+import React from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const affiliates = [
+  { name: 'Brielle K.', tier: 'Gold', code: 'brielle123', earnings: '$482.00', recruits: 4 },
+  { name: 'Nico V.', tier: 'Platinum', code: 'nico', earnings: '$910.00', recruits: 7 }
+];
+
+const AffiliateDirectoryView = () => (
+  <div className="p-6">
+    <h1 className="text-xl font-bold mb-4">🏛️ Affiliate Marketplace</h1>
+    <AnimatedCard>
+      <table className="w-full text-sm">
+        <thead><tr><th>Rep</th><th>Tier</th><th>Code</th><th>Recruits</th><th>Earnings</th></tr></thead>
+        <tbody>
+          {affiliates.map((a, i) => (
+            <tr key={i} className="border-t">
+              <td>{a.name}</td><td>{a.tier}</td><td>{a.code}</td><td>{a.recruits}</td><td>{a.earnings}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </AnimatedCard>
+  </div>
+);
+
+export default AffiliateDirectoryView;
+✅ 37.2 — Referral Tree Visualization (Mini View)
+jsx
+Copy
+Edit
+// src/components/widgets/ReferralTree.jsx
+import React from 'react';
+
+const referralTree = {
+  name: 'You',
+  children: [
+    { name: 'Lana T.', children: [{ name: 'Zane P.' }] },
+    { name: 'Mia R.' }
+  ]
+};
+
+const renderTree = (node) => (
+  <li>
+    {node.name}
+    {node.children && (
+      <ul className="ml-4 list-disc">{node.children.map(renderTree)}</ul>
+    )}
+  </li>
+);
+
+const ReferralTree = () => (
+  <div className="text-sm">
+    <p className="font-bold mb-2">👥 Your Network</p>
+    <ul>{renderTree(referralTree)}</ul>
+  </div>
+);
+
+export default ReferralTree;
+✅ Affiliate Directory + Referral Tree COMPLETE
+
+🚀 Next: PHASE 38 — NATURAL LANGUAGE ACTION ENGINE
+Reps say “Send a follow-up to Jasmine” and GPT executes it.
+
+🧠 PHASE 38: NATURAL LANGUAGE ACTION ENGINE
+✅ 38.1 — GPT-Based Intent Interpreter
+js
+Copy
+Edit
+// netlify/functions/ai/natural-command.js
+exports.handler = async (event) => {
+  const { userCommand } = JSON.parse(event.body);
+  const prompt = `
+You are an AI command router. Interpret this request:
+"${userCommand}"
+
+Return JSON: { action: 'send_followup', target: 'Jasmine', module: 'CRM' }
+`;
+
+  // GPT returns action, module, target
+};

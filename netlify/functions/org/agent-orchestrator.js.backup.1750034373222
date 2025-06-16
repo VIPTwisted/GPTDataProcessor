@@ -1,0 +1,83 @@
+
+const fetch = require('node-fetch');
+
+const DEPARTMENT_AGENTS = [
+  { id: 'ecom-agent', name: 'Ecommerce Agent', module: 'ecommerce' },
+  { id: 'fin-agent', name: 'Finance Agent', module: 'finance' },
+  { id: 'hr-agent', name: 'HR Agent', module: 'hr' },
+  { id: 'ops-agent', name: 'Operations Agent', module: 'operations' },
+  { id: 'mktg-agent', name: 'Marketing Agent', module: 'marketing' },
+  { id: 'support-agent', name: 'Support Agent', module: 'support' },
+  { id: 'supply-agent', name: 'Supply Chain Agent', module: 'supply' }
+];
+
+exports.handler = async (event, context) => {
+  try {
+    const results = [];
+
+    for (const agent of DEPARTMENT_AGENTS) {
+      const prompt = `
+You are the ${agent.name} for ToyParty. Based on your ${agent.module} focus, suggest ONE operational improvement or risk mitigation strategy for today.
+Be specific and actionable. Consider current business context and trends.
+
+Respond in JSON format:
+{
+  "agentId": "${agent.id}",
+  "suggestion": "specific actionable recommendation",
+  "impactLevel": "Low/Medium/High",
+  "confidence": 0.85,
+  "urgency": "Low/Medium/High",
+  "resourcesNeeded": "brief description"
+}
+`;
+
+      try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [{ role: 'system', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 300
+          })
+        });
+
+        const json = await res.json();
+        const content = json.choices[0].message.content;
+        const agentDecision = JSON.parse(content);
+        agentDecision.timestamp = new Date().toISOString();
+        results.push(agentDecision);
+      } catch (error) {
+        results.push({
+          agentId: agent.id,
+          suggestion: "Agent temporarily unavailable",
+          impactLevel: "Low",
+          confidence: 0.0,
+          error: error.message
+        });
+      }
+    }
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        decisions: results,
+        totalAgents: DEPARTMENT_AGENTS.length,
+        timestamp: new Date().toISOString()
+      })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+};

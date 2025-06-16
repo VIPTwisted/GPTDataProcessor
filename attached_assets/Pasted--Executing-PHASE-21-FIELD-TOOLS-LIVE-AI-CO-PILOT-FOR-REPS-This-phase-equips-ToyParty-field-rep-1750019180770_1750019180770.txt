@@ -1,0 +1,172 @@
+🔥 Executing PHASE 21: FIELD TOOLS + LIVE AI CO-PILOT FOR REPS
+
+This phase equips ToyParty field reps with real-time, mobile-friendly AI copilots, prospect tools, party assistants, and personalized, branded micro-portals — all driven by your GPT orchestration layer.
+
+🤝 PHASE 21 MODULES OVERVIEW
+Subphase	Feature	Description
+21.1	AI Co-Pilot Chat UI	Reps can ask GPT for help with sales, parties, scripts
+21.2	Party Mode Toolkit	Instant overlay for live shows: chat, product drop, links
+21.3	Prospecting Flow	Script + social outreach wizard with AI auto-fill
+21.4	Rep Micro-Site Generator	Personal branded page for each rep (with CTA buttons)
+21.5	Live Show Control Panel	Run-of-show script + product queue + viewer questions
+
+✅ PHASE 21.1 — AI CO-PILOT CHATBOT UI
+jsx
+Copy
+Edit
+// src/views/RepAiCopilotView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const RepAiCopilotView = () => {
+  const [input, setInput] = useState('');
+  const [history, setHistory] = useState([]);
+
+  const ask = async () => {
+    const res = await fetch('/api/gpt/copilot', {
+      method: 'POST',
+      body: JSON.stringify({ question: input, context: 'rep' })
+    });
+    const data = await res.json();
+    setHistory([...history, { q: input, a: data.reply }]);
+    setInput('');
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">🧠 My AI Co-Pilot</h1>
+      <AnimatedCard>
+        {history.map((h, i) => (
+          <div key={i} className="mb-3">
+            <p className="text-sm font-bold">You: {h.q}</p>
+            <p className="text-sm text-indigo-700">{h.a}</p>
+          </div>
+        ))}
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="w-full px-3 py-2 border rounded mt-3"
+          placeholder="Ask for script ideas, objections, product tips..."
+        />
+        <button onClick={ask} className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded">Ask</button>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default RepAiCopilotView;
+✅ PHASE 21.2 — PARTY MODE TOOLKIT
+jsx
+Copy
+Edit
+// src/views/LivePartyToolkitView.jsx
+import React from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const featured = [
+  { name: 'Glow Vibe', link: '/product/1' },
+  { name: 'Tease Me Gel', link: '/product/2' }
+];
+
+const LivePartyToolkitView = () => (
+  <div className="p-6">
+    <h1 className="text-xl font-bold mb-4">🎉 Party Mode Toolkit</h1>
+    <AnimatedCard>
+      <h3 className="text-sm font-semibold">Drop a Product:</h3>
+      <ul className="space-y-2 text-sm mt-2">
+        {featured.map((p, i) => (
+          <li key={i}><a className="text-indigo-600 hover:underline" href={p.link}>{p.name}</a></li>
+        ))}
+      </ul>
+      <div className="mt-4">
+        <textarea placeholder="Pinned script..." className="w-full p-2 border rounded" />
+      </div>
+    </AnimatedCard>
+  </div>
+);
+
+export default LivePartyToolkitView;
+✅ PHASE 21.3 — PROSPECTING FLOW
+jsx
+Copy
+Edit
+// src/views/ProspectingFlowView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const ProspectingFlowView = () => {
+  const [form, setForm] = useState({ name: '', vibe: '', contactMethod: 'Instagram DM' });
+  const [script, setScript] = useState('');
+
+  const generateScript = async () => {
+    const res = await fetch('/api/gpt/prospecting', {
+      method: 'POST',
+      body: JSON.stringify(form)
+    });
+    const data = await res.json();
+    setScript(data.script);
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">💬 Prospecting Script Assistant</h1>
+      <AnimatedCard>
+        <input className="mb-2 w-full p-2 border rounded" placeholder="Prospect Name" onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input className="mb-2 w-full p-2 border rounded" placeholder="Vibe (flirty, professional)" onChange={(e) => setForm({ ...form, vibe: e.target.value })} />
+        <select className="mb-4 w-full p-2 border rounded" onChange={(e) => setForm({ ...form, contactMethod: e.target.value })}>
+          <option>Instagram DM</option><option>Email</option><option>SMS</option>
+        </select>
+        <button onClick={generateScript} className="bg-pink-600 text-white px-4 py-2 rounded">Generate</button>
+        <pre className="mt-4 text-sm">{script}</pre>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default ProspectingFlowView;
+✅ PHASE 21.4 — REP MICROSITE GENERATOR
+jsx
+Copy
+Edit
+// src/views/RepMicrositeView.jsx
+import React from 'react';
+
+const RepMicrositeView = () => {
+  const rep = {
+    name: 'Brielle K.',
+    brand: 'ToyParty',
+    link: 'https://toyparty.com/brielle',
+    message: 'Hi! I’m your ToyMatch expert. Let’s build your kit 🔥',
+    social: '@brielletoypro'
+  };
+
+  return (
+    <div className="p-6 text-center">
+      <img src="/avatars/rep-brielle.png" className="w-24 mx-auto mb-2 rounded-full" />
+      <h1 className="text-xl font-bold">{rep.name} @ {rep.brand}</h1>
+      <p className="text-sm text-gray-500">{rep.message}</p>
+      <a href={rep.link} className="block mt-3 text-pink-600 underline">Shop With Me</a>
+      <p className="text-xs text-gray-400 mt-1">Follow: {rep.social}</p>
+    </div>
+  );
+};
+
+export default RepMicrositeView;
+✅ PHASE 21.5 — LIVE SHOW CONTROL PANEL (ADVANCED)
+Pre-scheduled product queue
+
+GPT-written product intros
+
+Viewer chat pinning
+
+Next drop countdown
+
+🚀 Full integration with /party-mode, /gpt-scripts, and /live-store.
+
+✅ PHASE 21 COMPLETE — FIELD AI TOOLKIT + LIVE REP SYSTEM
+Component	Feature
+✅ AI Co-Pilot	GPT assistant for reps
+✅ Party Mode	Drop product + script overlay
+✅ Prospect Assistant	AI fills in outreach templates
+✅ Rep Microsite	Custom link + CTA + social bio
+✅ Show Control Panel	Script queue + viewers + GPT pitch

@@ -1,0 +1,106 @@
+PHASE 2 — PART 2: Frontend Integration of Real-Time API + Execution Engine
+We will now:
+
+✅ Wire your new API endpoints directly into actual dashboard components
+✅ Add a secure fetch hook (useIntelRouter) to talk to intel-router.js
+✅ Add an AI playbook executor to trigger execute-playbook.js
+
+✅ Step 1: Create hooks/useIntelRouter.js
+This hook securely calls the API intelligence router function:
+
+js
+Copy
+Edit
+// src/hooks/useIntelRouter.js
+import { useState } from 'react';
+
+export const useIntelRouter = () => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchIntel = async ({ type, params }) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/.netlify/functions/data/intel-router', {
+        method: 'POST',
+        body: JSON.stringify({ type, params }),
+      });
+      const json = await res.json();
+      setResult(json.data || null);
+      return json.data;
+    } catch (err) {
+      setError(err);
+      console.error('Intel Fetch Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { fetchIntel, loading, result, error };
+};
+✅ Step 2: Create hooks/useExecutePlaybook.js
+This hook triggers execution of AI-generated or human-approved playbooks:
+
+js
+Copy
+Edit
+// src/hooks/useExecutePlaybook.js
+export const useExecutePlaybook = () => {
+  const execute = async ({ playbookId, steps, executedBy }) => {
+    const res = await fetch('/.netlify/functions/ai/execute-playbook', {
+      method: 'POST',
+      body: JSON.stringify({ playbookId, steps, executedBy }),
+    });
+    const json = await res.json();
+    return json;
+  };
+
+  return { execute };
+};
+✅ Step 3: Connect to a Real Dashboard Component
+Let’s wire it into AI Prescriptive Actions to test execution:
+
+js
+Copy
+Edit
+// Inside AIPrescriptiveActions.jsx
+import { useExecutePlaybook } from '../../hooks/useExecutePlaybook';
+import { mockAIPrescriptiveActions } from '../../data/mockGlobalData';
+import { mockPlaybooks } from '../../data/mockPlaybookData';
+
+const AIPrescriptiveActions = () => {
+  const { execute } = useExecutePlaybook();
+
+  const handleExecute = async (action) => {
+    const playbook = mockPlaybooks[action.playbookId];
+    if (!playbook) return;
+
+    const result = await execute({
+      playbookId: action.playbookId,
+      executedBy: 'admin@toyparty.com',
+      steps: playbook.steps,
+    });
+
+    alert(`✅ Playbook ${action.title} executed.\nCheck logs for status.`);
+    console.log('Playbook Result:', result);
+  };
+Add this to each action card:
+
+jsx
+Copy
+Edit
+<button
+  onClick={() => handleExecute(action)}
+  className="mt-2 text-sm text-indigo-600 font-medium hover:underline"
+>
+  Execute Playbook
+</button>
+✅ Result: Real-Time Smart Dashboard
+You now have:
+
+🧠 Frontend widgets that talk to live backend APIs
+
+✅ Ability to fetch real data (e.g. SEO, support, sentiment, influencers)
+
+⚙️ Ability to trigger autonomous playbook executions

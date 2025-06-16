@@ -1,0 +1,39 @@
+
+import { useEffect, useState } from 'react';
+
+export const useBrandConfig = (brandId = 'toyparty') => {
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    fetch(`/brands/brand-${brandId}/config.json`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Brand config not found: ${brandId}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setConfig(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Brand config load failed:', err);
+        setError(err.message);
+        setLoading(false);
+        // Fallback to default brand
+        if (brandId !== 'toyparty') {
+          fetch('/brands/brand-toyparty/config.json')
+            .then(res => res.json())
+            .then(setConfig)
+            .catch(() => {});
+        }
+      });
+  }, [brandId]);
+
+  return { config, loading, error }
+}

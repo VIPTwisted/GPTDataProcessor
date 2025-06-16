@@ -1,0 +1,163 @@
+🔥 Launching PHASE 11: FRONTLINE REP TOOLS + FIELD AI TOOLKIT
+This equips your sales reps, influencers, and support staff with real-time AI tools, guided workflows, and mobile-ready execution panels.
+
+🧳 PHASE 11 MODULES OVERVIEW
+Subphase	Feature	Description
+11.1	Rep Portal	Mobile-friendly dashboard for field reps
+11.2	AI Sales Assistant	GPT responds to product Qs, closes objections, personalizes pitches
+11.3	Guided Consult Flow	Step-by-step quiz builder for parties, events, or 1:1 sales
+11.4	Live Party Control Panel	Stream-ready interface with product carousel, add-to-cart links
+11.5	Rep Autopilot + Tracker	GPT recommends actions, schedules, responses per customer
+
+✅ PHASE 11.1 — FRONTLINE REP PORTAL UI
+jsx
+Copy
+Edit
+// src/views/RepDashboardView.jsx
+import React from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+import { FaChartLine, FaShoppingCart, FaRobot, FaUserFriends } from 'react-icons/fa';
+
+const RepDashboardView = () => {
+  const stats = {
+    totalSales: '$4,220',
+    leads: 31,
+    partiesHosted: 4,
+    openCarts: 6
+  };
+
+  return (
+    <div className="p-4 bg-white dark:bg-gray-900 min-h-screen">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My ToyParty Rep Panel</h1>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <AnimatedCard><FaChartLine /> Sales: {stats.totalSales}</AnimatedCard>
+        <AnimatedCard><FaUserFriends /> Leads: {stats.leads}</AnimatedCard>
+        <AnimatedCard><FaShoppingCart /> Open Carts: {stats.openCarts}</AnimatedCard>
+        <AnimatedCard><FaChartLine /> Events: {stats.partiesHosted}</AnimatedCard>
+      </div>
+    </div>
+  );
+};
+
+export default RepDashboardView;
+Add route:
+
+js
+Copy
+Edit
+import RepDashboardView from './views/RepDashboardView';
+<Route path="/rep" element={<RepDashboardView />} />
+✅ PHASE 11.2 — AI SALES ASSISTANT (GPT BOT)
+jsx
+Copy
+Edit
+// src/views/AiSalesAssistantView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const AiSalesAssistantView = () => {
+  const [question, setQuestion] = useState('');
+  const [reply, setReply] = useState('');
+
+  const handleAsk = async () => {
+    const res = await fetch('/api/gpt/sales-bot', {
+      method: 'POST',
+      body: JSON.stringify({ input: question, persona: 'rep' })
+    });
+    const data = await res.json();
+    setReply(data.reply);
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">AI Sales Assistant</h1>
+      <AnimatedCard>
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          className="w-full p-2 border rounded mb-2"
+          placeholder="Ask about a product, objection, or pitch idea..."
+        />
+        <button onClick={handleAsk} className="bg-indigo-600 text-white px-4 py-2 rounded">Ask</button>
+        <pre className="mt-4 text-sm text-gray-700 dark:text-white whitespace-pre-wrap">{reply}</pre>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default AiSalesAssistantView;
+✅ PHASE 11.3 — GUIDED CONSULT FLOW
+jsx
+Copy
+Edit
+// src/views/RepConsultFlowView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const steps = [
+  { q: 'Who is this party for?', key: 'audience' },
+  { q: 'Preferred vibe?', key: 'tone' },
+  { q: 'Budget range?', key: 'budget' },
+  { q: 'Must-have products?', key: 'mustHave' }
+];
+
+const RepConsultFlowView = () => {
+  const [answers, setAnswers] = useState({});
+  const [step, setStep] = useState(0);
+
+  const next = () => setStep((s) => s + 1);
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Party Builder</h1>
+      <AnimatedCard>
+        {step < steps.length ? (
+          <>
+            <p className="text-sm">{steps[step].q}</p>
+            <input
+              className="w-full p-2 border mt-2 rounded"
+              onChange={(e) =>
+                setAnswers({ ...answers, [steps[step].key]: e.target.value })
+              }
+            />
+            <button onClick={next} className="mt-4 bg-pink-600 text-white px-4 py-2 rounded">Next</button>
+          </>
+        ) : (
+          <pre className="text-xs text-gray-700 dark:text-white">{JSON.stringify(answers, null, 2)}</pre>
+        )}
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default RepConsultFlowView;
+✅ PHASE 11.4 — LIVE PARTY CONTROL PANEL
+jsx
+Copy
+Edit
+// src/views/PartyControlPanelView.jsx
+import React from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const featuredProducts = [
+  { name: 'Glow Vibe Kit', price: '$59', link: '/product/1' },
+  { name: 'Tease Me Bundle', price: '$42', link: '/product/2' }
+];
+
+const PartyControlPanelView = () => (
+  <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Live Party Host Panel</h1>
+    <AnimatedCard>
+      <h2 className="text-sm font-medium mb-2">Featured Products</h2>
+      <ul className="text-sm space-y-2">
+        {featuredProducts.map((p, i) => (
+          <li key={i}>
+            <a href={p.link} className="text-indigo-600 hover:underline">{p.name}</a> – <span>{p.price}</span>
+          </li>
+        ))}
+      </ul>
+    </AnimatedCard>
+  </div>
+);
+
+export default PartyControlPanelView;

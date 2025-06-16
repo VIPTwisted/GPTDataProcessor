@@ -1,0 +1,299 @@
+Of course. Let's continue and complete the "AI Actions & Playbooks Center."
+
+Here are the remaining components and the main view that ties them all together.
+
+Create src/components/actions/ActionListItem.jsx (New File)
+This component will render each AI action in the main list. It's designed to be data-rich but clean, providing key information at a glance and a button to open the details modal.
+
+JavaScript
+
+// src/components/actions/ActionListItem.jsx
+import React from 'react';
+import { getStatusColor, getStatusIcon } from '../../data/mockGlobalData';
+import { FaArrowRight, FaExclamationTriangle, FaHighlighter, FaCheckCircle } from 'react-icons/fa';
+
+const ActionListItem = ({ action, onOpenModal }) => {
+  const { id, priority, title, description, status, impact, riskLevel, eta } = action;
+
+  const priorityStyles = {
+    Critical: { icon: <FaExclamationTriangle />, color: 'border-red-500/50 bg-red-500/5' },
+    High: { icon: <FaHighlighter />, color: 'border-orange-500/50 bg-orange-500/5' },
+    Medium: { icon: <FaCheckCircle />, color: 'border-yellow-500/50 bg-yellow-500/5' },
+  };
+
+  const currentPriority = priorityStyles[priority] || priorityStyles['Medium'];
+
+  return (
+    <div className={`p-4 rounded-xl border-l-4 transition-all duration-300 ease-in-out hover:shadow-lg hover:border-l-blue-500 ${currentPriority.color}`}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between">
+        <div className="flex-grow">
+          <div className="flex items-center gap-3">
+            <span className={`text-xl ${getStatusColor(priority)}`}>{currentPriority.icon}</span>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 ml-9">{description}</p>
+        </div>
+
+        <div className="flex-shrink-0 flex items-center gap-6 mt-4 md:mt-0 md:ml-6">
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Impact</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">{impact}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">{status}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">ETA</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-200">{eta}</p>
+          </div>
+          <button
+            onClick={() => onOpenModal(action)}
+            className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:bg-blue-700 transition-colors"
+            aria-label="View Details"
+          >
+            <FaArrowRight />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ActionListItem;
+Create src/components/actions/ActionDetailModal.jsx (New File)
+This is the sophisticated modal that appears when a user clicks to view details. It will display all information about the action and use the PlaybookViewer component we created earlier. We'll use Framer Motion for a smooth entrance/exit animation.
+
+JavaScript
+
+// src/components/actions/ActionDetailModal.jsx
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTimes, FaUserCheck, FaThumbsDown, FaPlay } from 'react-icons/fa';
+import PlaybookViewer from './PlaybookViewer';
+import { mockPlaybooks } from '../../data/mockPlaybookData';
+
+const modalVariants = {
+  hidden: { opacity: 0, y: 50, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+  exit: { opacity: 0, y: 50, scale: 0.95, transition: { duration: 0.2, ease: 'easeIn' } },
+};
+
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
+const ActionDetailModal = ({ action, onClose }) => {
+  const playbook = action ? mockPlaybooks[action.playbookId] : null;
+
+  return (
+    <AnimatePresence>
+      {action && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          onClick={onClose}
+        >
+          <motion.div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+            variants={modalVariants}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+          >
+            <header className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{action.title}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Priority: {action.priority} | Risk Level: {action.riskLevel}</p>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                <FaTimes className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </header>
+
+            <main className="p-6 overflow-y-auto">
+              <div>
+                <h4 className="font-semibold text-gray-800 dark:text-gray-200">AI Analysis & Justification</h4>
+                <p className="mt-1 text-gray-700 dark:text-gray-300">{action.description}</p>
+              </div>
+
+              <PlaybookViewer playbook={playbook} />
+            </main>
+
+            <footer className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-end gap-4">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                <FaThumbsDown /> Reject
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                <FaUserCheck /> Approve
+              </button>
+               <button className="flex items-center gap-2 px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
+                <FaPlay /> Execute Playbook
+              </button>
+            </footer>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default ActionDetailModal;
+Create src/views/ActionsPlaybooksView.jsx (New File)
+This is the main view for the module. It fetches the data, handles filtering/state, and renders the list items and the modal.
+
+JavaScript
+
+// src/views/ActionsPlaybooksView.jsx
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { mockAIPrescriptiveActions } from '../data/mockGlobalData';
+import ActionListItem from '../components/actions/ActionListItem';
+import ActionDetailModal from '../components/actions/ActionDetailModal';
+import { FaSearch } from 'react-icons/fa';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1 },
+};
+
+const ActionsPlaybooksView = () => {
+  const [selectedAction, setSelectedAction] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({ priority: 'All', status: 'All' });
+
+  const filteredActions = useMemo(() => {
+    return mockAIPrescriptiveActions.filter(action => {
+      const searchMatch = action.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          action.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const priorityMatch = filters.priority === 'All' || action.priority === filters.priority;
+      const statusMatch = filters.status === 'All' || action.status === filters.status;
+      return searchMatch && priorityMatch && statusMatch;
+    });
+  }, [searchTerm, filters]);
+
+  const handleOpenModal = (action) => setSelectedAction(action);
+  const handleCloseModal = () => setSelectedAction(null);
+  
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <>
+      <div className="p-4 md:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+            AI Actions & Playbooks Center
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
+            Review, approve, and monitor all AI-generated operational directives.
+          </p>
+        </header>
+
+        {/* Filter and Search Bar */}
+        <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md mb-8 flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-grow w-full md:w-auto">
+            <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search actions..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-4">
+            <select name="priority" value={filters.priority} onChange={handleFilterChange} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+              <option value="All">All Priorities</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+            </select>
+            <select name="status" value={filters.status} onChange={handleFilterChange} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+              <option value="All">All Statuses</option>
+              <option value="New Suggestion">New Suggestion</option>
+              <option value="Pending Approval">Pending Approval</option>
+              <option value="Approved, Executing">Approved, Executing</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Actions List */}
+        <motion.div
+          className="space-y-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {filteredActions.map(action => (
+            <motion.div key={action.id} variants={itemVariants}>
+              <ActionListItem action={action} onOpenModal={handleOpenModal} />
+            </motion.div>
+          ))}
+        </motion.div>
+         {filteredActions.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-gray-500 dark:text-gray-400">No actions match your criteria.</p>
+          </div>
+        )}
+      </div>
+
+      <ActionDetailModal action={selectedAction} onClose={handleCloseModal} />
+    </>
+  );
+};
+
+export default ActionsPlaybooksView;
+Final App.js Update
+Finally, add the new route to your main App component.
+
+JavaScript
+
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import DashboardOverview from './views/DashboardOverview';
+import ActionsPlaybooksView from './views/ActionsPlaybooksView'; // Import the new view
+import { ThemeProvider } from './context/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Router>
+        <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+            <nav className="bg-white dark:bg-gray-800/80 backdrop-blur-sm shadow-md p-4 flex justify-between items-center sticky top-0 z-40">
+              <Link to="/" className="text-xl font-bold text-gray-800 dark:text-white">
+                Kitchen Sink OS
+              </Link>
+              <ThemeToggle />
+            </nav>
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<DashboardOverview />} />
+                {/* ADD THE NEW ROUTE HERE */}
+                <Route path="/actions" element={<ActionsPlaybooksView />} />
+              </Routes>
+            </main>
+        </div>
+      </Router>
+    </ThemeProvider>
+  );
+}
+
+export default App;

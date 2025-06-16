@@ -1,0 +1,95 @@
+🔥 Continuing with PHASE 9.5 — SECURE MULTI-TENANT ROUTING & ISOLATION
+
+This final subphase ensures your Gemini OS supports multiple brands with clean separation, security, and scoped AI behavior.
+
+🔐 PHASE 9.5 — MULTI-TENANT SECURITY + ISOLATION
+Feature	Description
+🛡️ Route guard	Enforce access by brand ID and user role
+🧠 GPT brand scope	Every AI call includes brand ID context
+📁 Data separation	(Optional) Filtered queries per brand or tenant
+🔐 Isolation enforcement	Prevent users from seeing cross-brand data
+
+✅ Step 1: Secure Routing Context (useTenantAuth.js)
+js
+Copy
+Edit
+// src/hooks/useTenantAuth.js
+import { useAuth } from '../context/AuthContext';
+import { useParams } from 'react-router-dom';
+
+export const useTenantAuth = () => {
+  const { user } = useAuth();
+  const { brandId } = useParams();
+
+  const authorized = user?.brandId === brandId || user?.role === 'admin';
+  return { authorized, brandId };
+};
+✅ Step 2: Create components/auth/BrandProtectedRoute.jsx
+jsx
+Copy
+Edit
+// src/components/auth/BrandProtectedRoute.jsx
+import React from 'react';
+import { Navigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+const BrandProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  const { brandId } = useParams();
+
+  if (!user) return <p className="p-6">Loading auth...</p>;
+  if (user.role === 'admin' || user.brandId === brandId) return children;
+
+  return <Navigate to="/" />;
+};
+
+export default BrandProtectedRoute;
+Wrap secure brand routes like this:
+
+jsx
+Copy
+Edit
+<Route path="/:brandId/dashboard" element={
+  <BrandProtectedRoute>
+    <DashboardOverview />
+  </BrandProtectedRoute>
+} />
+✅ Step 3: GPT + API Isolation
+In GPT API functions or Netlify calls:
+
+js
+Copy
+Edit
+const brandScopedPrompt = `
+You are the AI for brand: ${brandId.toUpperCase()}.
+Only respond with information and tone defined by brand ${brandId}.
+`;
+✅ Prevents any GPT agent from bleeding across brand contexts.
+
+✅ Step 4: Data Layer (Optional Isolation Logic)
+In your data fetch or backend API:
+
+js
+Copy
+Edit
+const userBrand = user.brandId;
+const allData = await fetch('/data/whatever.json');
+const scopedData = allData.filter(item => item.brandId === userBrand);
+✅ PHASE 9.5 COMPLETE — Multi-Tenant Secure Mode
+Security Layer	Feature
+✅ Route Guard	Role + brand-based route protection
+✅ GPT Scoped Prompts	Prompts constrained by brand
+✅ Persona Isolation	AI config per team/role/brand
+✅ Data Isolation (optional)	Brand-specific access to logs, dashboards, metrics
+
+✅ PHASE 9 COMPLETE — GEMINI MULTI-BRAND + PERSONA INTELLIGENCE
+Your platform now supports:
+
+🧬 Dynamic brand onboarding
+
+🧠 Per-brand AI brain, tone, GPT prompt
+
+🔁 Brand switcher + simulator
+
+🔐 Isolation, security, scoped prompts and dashboards
+

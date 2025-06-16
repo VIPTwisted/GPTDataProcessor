@@ -1,0 +1,118 @@
+🧠 PHASE 3.1: PRESCRIPTIVE PLAYBOOK ENGINE
+A fully modular engine that lets AI or users build, approve, execute, and explain decision trees.
+
+We’ll build:
+
+Component	Description
+🧩 PlaybookEditor.jsx	Drag & drop visual builder (mock for now, hooks later)
+🧠 ExplainAI.jsx	Why AI suggested this action (GPT/LLM-ready)
+📊 Execution Tracker	See status of each step in real-time
+🛠️ Save + Submit API	POST playbooks for approval or auto-run
+
+✅ Step 1: Create views/PlaybookEditorView.jsx
+jsx
+Copy
+Edit
+// src/views/PlaybookEditorView.jsx
+import React, { useState } from 'react';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const emptyStep = { title: '', description: '', type: 'System' };
+
+const PlaybookEditorView = () => {
+  const [steps, setSteps] = useState([{ ...emptyStep }]);
+  const [title, setTitle] = useState('New AI-Recommended Playbook');
+
+  const handleAdd = () => setSteps([...steps, { ...emptyStep }]);
+
+  const handleChange = (index, field, value) => {
+    const copy = [...steps];
+    copy[index][field] = value;
+    setSteps(copy);
+  };
+
+  const handleSubmit = async () => {
+    const payload = {
+      playbookId: `pb-${Date.now()}`,
+      title,
+      createdBy: 'admin@toyparty.com',
+      steps,
+    };
+
+    const res = await fetch('/.netlify/functions/ai/execute-playbook', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    alert('✅ Playbook Submitted:\n' + JSON.stringify(result, null, 2));
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Prescriptive Playbook Builder</h1>
+      <AnimatedCard className="mb-6">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full px-4 py-2 mb-4 rounded border dark:bg-gray-800 text-lg font-semibold"
+          placeholder="Playbook Title"
+        />
+
+        {steps.map((s, i) => (
+          <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <input
+              value={s.title}
+              onChange={(e) => handleChange(i, 'title', e.target.value)}
+              className="px-3 py-2 rounded bg-white dark:bg-gray-800 border"
+              placeholder="Step Title"
+            />
+            <input
+              value={s.description}
+              onChange={(e) => handleChange(i, 'description', e.target.value)}
+              className="px-3 py-2 rounded bg-white dark:bg-gray-800 border"
+              placeholder="Description"
+            />
+            <select
+              value={s.type}
+              onChange={(e) => handleChange(i, 'type', e.target.value)}
+              className="px-3 py-2 rounded bg-white dark:bg-gray-800 border"
+            >
+              <option>System</option>
+              <option>Human</option>
+              <option>Approval</option>
+            </select>
+          </div>
+        ))}
+
+        <button onClick={handleAdd} className="mr-4 px-4 py-2 bg-blue-600 text-white rounded">
+          ➕ Add Step
+        </button>
+        <button onClick={handleSubmit} className="px-4 py-2 bg-green-600 text-white rounded">
+          🚀 Submit Playbook
+        </button>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default PlaybookEditorView;
+✅ Step 2: Add Route in App.js
+jsx
+Copy
+Edit
+import PlaybookEditorView from './views/PlaybookEditorView';
+// ...
+<Route path="/playbooks/create" element={<PlaybookEditorView />} />
+🧠 ExplainAI Component (Coming Up Next…)
+Component	Description
+🤖 ExplainAI.jsx	GPT-style card showing “Why AI suggested this”
+🔍 Fields: Trigger source, correlation, confidence, recommendation	
+🧠 Supports: GPT call or simulation for now (open JSON schema)	
+
+✅ Delivered So Far in Phase 3
+Layer	Capability
+🛠️ Playbook Engine	Editable step-based action builder
+🚀 API Submission	Sends playbooks to executor or approval layer
+🧠 Autonomous Ready	Can be triggered by GPT or anomaly stream
+👥 Role-Protected	Auth layer already enforced (Phase 2)

@@ -1,0 +1,47 @@
+
+exports.handler = async (event, context) => {
+  try {
+    const { brandId, repRole, trainingNeeds = [] } = JSON.parse(event.body);
+
+    // Mock personalized training responses based on brand and role
+    const responses = {
+      'ToyParty': {
+        'rep': "Hey gorgeous! 💋 I see you're working on objection handling - that's where the magic happens! Remember, confidence is your best accessory. When someone hesitates, lean into the benefits they'll feel, not just what they'll get. You've got this! - Your ToyParty Trainer Bot ✨",
+        'leader': "Queen! 👑 You're stepping up to leadership level, and I'm here for it! Focus on mentoring your team through storytelling - share your wins and losses. Great leaders create other leaders. Ready to unlock that next certification? - Your Leadership Trainer Bot 🚀"
+      },
+      'HoneyGlow': {
+        'rep': "Sweet soul 🍯 Your glow-up journey is inspiring! For those confidence conversations, remember - you're not selling products, you're sharing transformation. Share your personal story and watch hearts (and orders) open. Keep shining! - Your HoneyGlow Trainer Bot ✨"
+      },
+      'VibeVault': {
+        'rep': "Vibe check! ⚡ You're building something amazing here. For social campaigns, authenticity beats perfection every time. Show your real life, real results, real you. Your tribe will find you when you stay true to your vibe. - Your Vibe Trainer Bot 🎵"
+      }
+    };
+
+    const brandResponses = responses[brandId] || responses['ToyParty'];
+    const message = brandResponses[repRole] || brandResponses['rep'];
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        message,
+        nextCourse: trainingNeeds.length > 0 ? `${trainingNeeds[0]} Mastery Course` : 'Advanced Sales Strategies',
+        brandId,
+        repRole,
+        timestamp: new Date().toISOString()
+      })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    };
+  }
+};

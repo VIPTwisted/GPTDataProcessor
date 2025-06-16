@@ -1,0 +1,35 @@
+
+import { useAuth } from '../context/AuthContext';
+import { useBrandConfig } from './useBrandConfig';
+
+export const usePersonaPrompt = (brandId = 'toyparty') => {
+  const { user } = useAuth();
+  const { config: brand } = useBrandConfig(brandId);
+  
+  if (!brand || !user) {
+    return { prompt: '', persona: null };
+  }
+
+  const role = user.role || 'rep';
+  const persona = brand.personas?.[role] || brand.gptPersona;
+
+  const prompt = `
+You are ${persona.name}, the AI for ${brand.displayName}.
+Use a tone that is ${persona.tone}.
+Always sign responses with: ${persona.signature}
+Context: role = ${role}, brand = ${brand.brandId}
+
+Key brand characteristics:
+- Primary color: ${brand.primaryColor}
+- Brand personality: ${brand.gptPersona.tone}
+- Available modules: ${Object.keys(brand.modules).filter(m => brand.modules[m]).join(', ')}
+
+Guidelines:
+- Stay consistent with the brand voice and personality
+- Only discuss features and modules enabled for this brand
+- Maintain the persona throughout the conversation
+- Be helpful while staying in character
+`;
+
+  return { prompt, persona };
+};

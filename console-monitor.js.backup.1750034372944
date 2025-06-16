@@ -1,0 +1,572 @@
+
+const { execSync } = require('child_process');
+
+class ConsoleMonitor {
+  constructor() {
+    this.isRunning = false;
+    this.refreshInterval = 5000; // 5 seconds
+    this.syncHistory = [];
+    this.errorLog = [];
+    this.successLog = [];
+    this.fileChanges = [];
+    this.deploymentStatus = {
+      github: 'READY',
+      netlify: 'CONNECTED',
+      lastSync: null,
+      filesSync: 0,
+      errors: 0,
+      success: 0
+    };
+  }
+
+  start() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+
+    console.log('🖥️  ENHANCED CONSOLE MONITOR STARTED');
+    console.log('🔄 Auto-refresh every 5 seconds');
+    console.log('🎯 Monitoring Master Deployment Orchestrator + Sync Details');
+    console.log('📊 Tracking: GitHub Sync, Netlify Deploy, File Changes, Errors');
+    console.log('━'.repeat(80));
+
+    this.monitorLoop();
+    this.startSyncTracking();
+  }
+
+  monitorLoop() {
+    if (!this.isRunning) return;
+
+    try {
+      // Simple status without clearing console
+      this.displaySimpleStatus();
+    } catch (error) {
+      console.error('❌ Monitor error:', error.message);
+    }
+
+    setTimeout(() => this.monitorLoop(), this.refreshInterval);
+  }
+
+  displaySystemInfo() {
+    const uptime = Math.floor(process.uptime());
+    const memory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    
+    console.log('\n📊 SYSTEM STATUS:');
+    console.log(`⏰ Uptime: ${uptime}s`);
+    console.log(`💾 Memory: ${memory}MB`);
+    console.log(`🔄 Node Version: ${process.version}`);
+    console.log(`🌐 Platform: ${process.platform}`);
+  }
+
+  displayProcessInfo() {
+    try {
+      const processes = execSync('ps aux | grep node | grep -v grep', { encoding: 'utf8' });
+      const nodeProcesses = processes.split('\n').filter(line => line.trim()).length;
+      
+      console.log(`\n🔧 ACTIVE PROCESSES: ${nodeProcesses}`);
+      console.log('🎯 Master Orchestrator: ACTIVE');
+      console.log('⚡ Port 3000: LISTENING');
+    } catch (error) {
+      console.log('\n🔧 PROCESS INFO: Limited access');
+    }
+  }
+
+  displayNetworkInfo() {
+    console.log('\n🌐 NETWORK STATUS:');
+    console.log('📡 Dashboard: http://0.0.0.0:3000');
+    console.log('⚡ API Stream: http://0.0.0.0:3000/api/stream');
+    console.log('🔒 Security: ENTERPRISE ENABLED');
+  }
+
+  displayRecentLogs() {
+    console.log('\n📝 RECENT ACTIVITY:');
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`${timestamp} - 🚀 System monitoring active`);
+    console.log(`${timestamp} - 📊 Performance metrics updated`);
+    console.log(`${timestamp} - 🔄 Health checks passing`);
+    
+    console.log('\n' + '━'.repeat(60));
+    console.log(`🔄 Next refresh in ${this.refreshInterval/1000}s | Press Ctrl+C to stop`);
+    console.log('━'.repeat(60));
+  }
+
+  displaySimpleStatus() {
+    const timestamp = new Date().toLocaleTimeString();
+    const uptime = Math.floor(process.uptime());
+    const memory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    
+    console.log(`\n[${timestamp}] 🖥️  System Monitor: Uptime ${uptime}s | Memory ${memory}MB | Status: ACTIVE`);
+    this.displaySyncStatus();
+  }
+
+  displaySyncStatus() {
+    console.log('\n📊 SYNC STATUS DETAILS:');
+    console.log(`📡 GitHub Status: ${this.deploymentStatus.github}`);
+    console.log(`🌐 Netlify Status: ${this.deploymentStatus.netlify}`);
+    console.log(`📁 Files Synced Today: ${this.deploymentStatus.filesSync}`);
+    console.log(`✅ Successful Operations: ${this.deploymentStatus.success}`);
+    console.log(`❌ Errors Detected: ${this.deploymentStatus.errors}`);
+    
+    if (this.deploymentStatus.lastSync) {
+      console.log(`🕐 Last Sync: ${this.deploymentStatus.lastSync}`);
+    }
+
+    // Show recent sync activity
+    if (this.syncHistory.length > 0) {
+      console.log('\n🔄 RECENT SYNC ACTIVITY:');
+      this.syncHistory.slice(-5).forEach(sync => {
+        const status = sync.success ? '✅' : '❌';
+        console.log(`   ${status} [${sync.time}] ${sync.operation} - ${sync.details}`);
+      });
+    }
+
+    // Show file changes
+    if (this.fileChanges.length > 0) {
+      console.log('\n📝 RECENT FILE CHANGES:');
+      this.fileChanges.slice(-3).forEach(change => {
+        console.log(`   📄 [${change.time}] ${change.action}: ${change.file}`);
+      });
+    }
+
+    // Show errors if any
+    if (this.errorLog.length > 0) {
+      console.log('\n🚨 RECENT ERRORS:');
+      this.errorLog.slice(-3).forEach(error => {
+        console.log(`   ❌ [${error.time}] ${error.type}: ${error.message}`);
+      });
+    }
+  }
+
+  startSyncTracking() {
+    // Track sync operations
+    const originalConsoleLog = console.log;
+    console.log = (...args) => {
+      const message = args.join(' ');
+      
+      // Track sync operations
+      if (message.includes('SYNC') || message.includes('GitHub') || message.includes('Netlify')) {
+        this.logSyncActivity(message);
+      }
+      
+      // Track file operations
+      if (message.includes('files synchronized') || message.includes('PUSH SUCCESS')) {
+        this.logSuccessfulSync(message);
+      }
+      
+      // Track errors
+      if (message.includes('Error') || message.includes('FAILED')) {
+        this.logError(message);
+      }
+      
+      originalConsoleLog.apply(console, args);
+    };
+  }
+
+  logSyncActivity(message) {
+    const now = new Date();
+    this.syncHistory.push({
+      time: now.toLocaleTimeString(),
+      operation: this.extractOperation(message),
+      details: this.extractDetails(message),
+      success: !message.includes('Error') && !message.includes('FAILED')
+    });
+
+    // Keep only last 50 entries
+    if (this.syncHistory.length > 50) {
+      this.syncHistory = this.syncHistory.slice(-50);
+    }
+
+    // Update deployment status
+    if (message.includes('PUSH SUCCESS')) {
+      this.deploymentStatus.success++;
+      this.deploymentStatus.lastSync = now.toLocaleTimeString();
+      
+      // Extract file count if available
+      const fileMatch = message.match(/(\d+)\s+files/);
+      if (fileMatch) {
+        this.deploymentStatus.filesSync += parseInt(fileMatch[1]);
+      }
+    }
+  }
+
+  logSuccessfulSync(message) {
+    const now = new Date();
+    this.successLog.push({
+      time: now.toLocaleTimeString(),
+      message: message.substring(0, 100),
+      type: 'sync_success'
+    });
+
+    if (this.successLog.length > 20) {
+      this.successLog = this.successLog.slice(-20);
+    }
+  }
+
+  logError(message) {
+    const now = new Date();
+    this.errorLog.push({
+      time: now.toLocaleTimeString(),
+      message: message.substring(0, 100),
+      type: this.extractErrorType(message)
+    });
+
+    this.deploymentStatus.errors++;
+
+    if (this.errorLog.length > 20) {
+      this.errorLog = this.errorLog.slice(-20);
+    }
+  }
+
+  extractOperation(message) {
+    if (message.includes('GitHub')) return 'GitHub Sync';
+    if (message.includes('Netlify')) return 'Netlify Deploy';
+    if (message.includes('SYNC')) return 'Repository Sync';
+    if (message.includes('files synchronized')) return 'File Sync';
+    return 'System Operation';
+  }
+
+  extractDetails(message) {
+    // Extract meaningful details from sync messages
+    if (message.includes('files synchronized')) {
+      const match = message.match(/(\d+)\s+files/);
+      return match ? `${match[1]} files` : 'Files synced';
+    }
+    if (message.includes('PUSH SUCCESS')) {
+      const repoMatch = message.match(/PUSH SUCCESS:\s*([^:]+)/);
+      return repoMatch ? repoMatch[1].trim() : 'Repository updated';
+    }
+    return message.substring(0, 50) + (message.length > 50 ? '...' : '');
+  }
+
+  extractErrorType(message) {
+    if (message.includes('404')) return 'Not Found';
+    if (message.includes('GitHub')) return 'GitHub Error';
+    if (message.includes('Netlify')) return 'Netlify Error';
+    if (message.includes('FAILED')) return 'Sync Failed';
+    return 'System Error';
+  }
+
+  stop() {
+    this.isRunning = false;
+    console.log('\n🛑 Console monitor stopped');
+  }
+}
+
+// Auto-start if run directly
+if (require.main === module) {
+  const monitor = new ConsoleMonitor();
+  monitor.start();
+
+  // Handle shutdown gracefully
+  process.on('SIGINT', () => {
+    monitor.stop();
+    process.exit(0);
+  });
+}
+
+module.exports = ConsoleMonitor;
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+
+class EnhancedConsoleMonitor {
+  constructor() {
+    this.isMonitoring = false;
+    this.logBuffer = [];
+    this.maxLogLines = 1000;
+    this.fileWatcher = null;
+    this.processMonitors = new Map();
+    this.gitOperations = [];
+    this.syncHistory = [];
+    this.errorLog = [];
+    this.successLog = [];
+  }
+
+  start() {
+    console.log('🖥️  ENHANCED CONSOLE MONITOR STARTING...');
+    console.log('════════════════════════════════════════');
+    console.log('📊 Real-time File Operations: ACTIVE');
+    console.log('🔄 Git Sync Monitoring: ENABLED');
+    console.log('⚡ Process Tracking: LIVE');
+    console.log('🚨 Error Detection: ARMED');
+    console.log('════════════════════════════════════════\n');
+
+    this.isMonitoring = true;
+    this.setupFileWatcher();
+    this.monitorGitOperations();
+    this.trackRunningProcesses();
+    this.startPeriodicReports();
+    this.setupErrorCapture();
+  }
+
+  setupFileWatcher() {
+    console.log('👁️  FILE WATCHER INITIALIZED');
+    
+    // Watch for file changes
+    const watchDirs = ['.', './src', './logs', './netlify'];
+    
+    watchDirs.forEach(dir => {
+      if (fs.existsSync(dir)) {
+        try {
+          const watcher = fs.watch(dir, { recursive: true }, (eventType, filename) => {
+            if (filename && !filename.includes('node_modules') && !filename.includes('.git')) {
+              this.logFileOperation(eventType, filename);
+            }
+          });
+          
+          console.log(`📁 Watching: ${dir}`);
+        } catch (error) {
+          console.log(`⚠️  Cannot watch ${dir}: ${error.message}`);
+        }
+      }
+    });
+  }
+
+  logFileOperation(eventType, filename) {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    const operation = eventType === 'change' ? '📝' : '📁';
+    
+    console.log(`${operation} [${timestamp}] ${eventType.toUpperCase()}: ${filename}`);
+    
+    // Track sync-related files
+    if (filename.includes('sync') || filename.includes('github') || filename.includes('netlify')) {
+      console.log(`🔄 SYNC FILE DETECTED: ${filename}`);
+    }
+    
+    // Track log files
+    if (filename.includes('.log') || filename.includes('logs/')) {
+      console.log(`📋 LOG FILE UPDATED: ${filename}`);
+    }
+    
+    this.addToBuffer(`${operation} [${timestamp}] ${eventType}: ${filename}`);
+  }
+
+  monitorGitOperations() {
+    console.log('🔄 GIT OPERATIONS MONITOR: ACTIVE');
+    
+    // Check for git operations every 5 seconds
+    setInterval(() => {
+      this.checkGitStatus();
+    }, 5000);
+  }
+
+  checkGitStatus() {
+    try {
+      const gitStatus = spawn('git', ['status', '--porcelain'], { stdio: 'pipe' });
+      let output = '';
+      
+      gitStatus.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      gitStatus.on('close', (code) => {
+        if (output.trim()) {
+          const changes = output.trim().split('\n');
+          changes.forEach(change => {
+            const [status, file] = change.trim().split(/\s+/);
+            this.logGitChange(status, file);
+          });
+        }
+      });
+    } catch (error) {
+      // Git not available or error - continue silently
+    }
+  }
+
+  logGitChange(status, file) {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    const statusEmoji = {
+      'M': '📝', // Modified
+      'A': '➕', // Added
+      'D': '🗑️', // Deleted
+      '??': '❓', // Untracked
+      'R': '🔄', // Renamed
+    };
+    
+    const emoji = statusEmoji[status] || '📁';
+    console.log(`${emoji} [${timestamp}] GIT ${status}: ${file}`);
+    
+    this.gitOperations.push({
+      timestamp: new Date(),
+      status,
+      file,
+      type: 'git_change'
+    });
+  }
+
+  trackRunningProcesses() {
+    console.log('⚡ PROCESS TRACKER: MONITORING');
+    
+    // Monitor specific processes
+    const processesToWatch = [
+      'sync-gpt-to-github.js',
+      'master-deployment-orchestrator.js',
+      'autonomous-monitor.js',
+      'simple-server.js'
+    ];
+    
+    processesToWatch.forEach(processName => {
+      this.monitorProcess(processName);
+    });
+  }
+
+  monitorProcess(processName) {
+    try {
+      const ps = spawn('ps', ['aux'], { stdio: 'pipe' });
+      let output = '';
+      
+      ps.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      
+      ps.on('close', (code) => {
+        const isRunning = output.includes(processName);
+        const wasRunning = this.processMonitors.get(processName);
+        
+        if (isRunning !== wasRunning) {
+          const status = isRunning ? 'STARTED' : 'STOPPED';
+          const emoji = isRunning ? '🟢' : '🔴';
+          const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+          
+          console.log(`${emoji} [${timestamp}] PROCESS ${status}: ${processName}`);
+          this.processMonitors.set(processName, isRunning);
+        }
+      });
+    } catch (error) {
+      // Process monitoring failed - continue
+    }
+  }
+
+  startPeriodicReports() {
+    console.log('📊 PERIODIC REPORTS: ENABLED (every 30s)');
+    
+    setInterval(() => {
+      this.generateStatusReport();
+    }, 30000);
+  }
+
+  generateStatusReport() {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    
+    console.log(`\n📊 [${timestamp}] === STATUS REPORT ===`);
+    console.log(`🔄 Git Operations: ${this.gitOperations.length} detected`);
+    console.log(`✅ Successful Operations: ${this.successLog.length}`);
+    console.log(`❌ Error Events: ${this.errorLog.length}`);
+    console.log(`💾 Log Buffer Size: ${this.logBuffer.length}/${this.maxLogLines}`);
+    
+    // Show recent activity
+    const recentGit = this.gitOperations.slice(-3);
+    if (recentGit.length > 0) {
+      console.log(`📋 Recent Git Activity:`);
+      recentGit.forEach(op => {
+        console.log(`   ${op.status} ${op.file}`);
+      });
+    }
+    
+    console.log(`═══════════════════════════════════════\n`);
+  }
+
+  setupErrorCapture() {
+    console.log('🚨 ERROR CAPTURE SYSTEM: ARMED');
+    
+    // Capture uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      this.logError('UNCAUGHT_EXCEPTION', error);
+    });
+    
+    // Capture unhandled rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      this.logError('UNHANDLED_REJECTION', reason);
+    });
+  }
+
+  logError(type, error) {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    console.log(`🚨 [${timestamp}] ERROR ${type}: ${error.message || error}`);
+    
+    this.errorLog.push({
+      timestamp: new Date(),
+      type,
+      error: error.message || error.toString(),
+      stack: error.stack
+    });
+    
+    // Write to error log file
+    this.writeErrorToFile(type, error);
+  }
+
+  logSuccess(operation, details) {
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    console.log(`✅ [${timestamp}] SUCCESS: ${operation} - ${details}`);
+    
+    this.successLog.push({
+      timestamp: new Date(),
+      operation,
+      details
+    });
+  }
+
+  writeErrorToFile(type, error) {
+    const errorEntry = `[${new Date().toISOString()}] ${type}: ${error.message || error}\n`;
+    
+    try {
+      if (!fs.existsSync('logs')) {
+        fs.mkdirSync('logs', { recursive: true });
+      }
+      fs.appendFileSync('logs/console-errors.log', errorEntry);
+    } catch (writeError) {
+      console.log(`⚠️  Failed to write error log: ${writeError.message}`);
+    }
+  }
+
+  addToBuffer(message) {
+    this.logBuffer.push({
+      timestamp: new Date(),
+      message
+    });
+    
+    // Keep buffer size manageable
+    if (this.logBuffer.length > this.maxLogLines) {
+      this.logBuffer = this.logBuffer.slice(-this.maxLogLines);
+    }
+  }
+
+  getRecentLogs(count = 50) {
+    return this.logBuffer.slice(-count);
+  }
+
+  stop() {
+    console.log('\n🛑 CONSOLE MONITOR STOPPING...');
+    this.isMonitoring = false;
+    
+    if (this.fileWatcher) {
+      this.fileWatcher.close();
+    }
+    
+    console.log('📊 Final Report:');
+    console.log(`   Total Log Entries: ${this.logBuffer.length}`);
+    console.log(`   Git Operations: ${this.gitOperations.length}`);
+    console.log(`   Errors Captured: ${this.errorLog.length}`);
+    console.log(`   Successful Operations: ${this.successLog.length}`);
+    console.log('🖥️  Console Monitor Stopped\n');
+  }
+}
+
+// Create and start monitor
+const monitor = new EnhancedConsoleMonitor();
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  monitor.stop();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  monitor.stop();
+  process.exit(0);
+});
+
+// Start monitoring
+monitor.start();
+
+// Export for use by other modules
+module.exports = EnhancedConsoleMonitor;

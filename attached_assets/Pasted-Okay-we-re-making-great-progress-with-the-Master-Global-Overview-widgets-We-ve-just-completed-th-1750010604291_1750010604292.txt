@@ -1,0 +1,134 @@
+Okay, we're making great progress with the "Master Global Overview" widgets! We've just completed the PerformanceOverviewWidget.jsx and updated mockGlobalData.js.
+
+Let's move on to the next essential widget.
+
+Create src/components/widgets/RecentActivitiesWidget.jsx (New File)
+This widget will display a concise log of the most recent critical activities or alerts across the global infrastructure, providing a quick glance at ongoing or recently resolved issues.
+
+JavaScript
+
+// src/components/widgets/RecentActivitiesWidget.jsx
+import React from 'react';
+import AnimatedCard from './AnimatedCard';
+import { mockRecentActivities } from '../../data/mockGlobalData'; // We'll add this to mockGlobalData
+
+const ActivityItem = ({ type, description, timestamp, status }) => {
+  let icon = 'ℹ️'; // Info
+  let color = 'text-blue-500';
+
+  switch (status.toLowerCase()) {
+    case 'critical':
+      icon = '🚨'; // Alert
+      color = 'text-red-500';
+      break;
+    case 'warning':
+      icon = '⚠️'; // Warning
+      color = 'text-yellow-500';
+      break;
+    case 'resolved':
+      icon = '✅'; // Check mark
+      color = 'text-green-500';
+      break;
+    case 'info':
+    default:
+      icon = 'ℹ️';
+      color = 'text-blue-500';
+      break;
+  }
+
+  return (
+    <div className="flex items-start space-x-2 py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+      <span className={`text-lg ${color}`}>{icon}</span>
+      <div className="flex-1">
+        <p className="text-sm text-gray-800 dark:text-gray-200">
+          <span className="font-semibold capitalize">{type}:</span> {description}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{new Date(timestamp).toLocaleString()}</p>
+      </div>
+    </div>
+  );
+};
+
+const RecentActivitiesWidget = ({ onClick }) => {
+  const displayActivities = mockRecentActivities.slice(0, 5); // Show top 5 for brevity
+
+  return (
+    <AnimatedCard
+      title="Recent Activities"
+      subTitle="Critical Alerts & Updates"
+      onClick={onClick}
+      className="col-span-1 min-h-64"
+    >
+      {displayActivities.length > 0 ? (
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          {displayActivities.map((activity, index) => (
+            <ActivityItem key={index} {...activity} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-gray-500 dark:text-gray-400 py-4">No recent activities to display.</p>
+      )}
+    </AnimatedCard>
+  );
+};
+
+export default RecentActivitiesWidget;
+Next, we need to update src/data/mockGlobalData.js to include mockRecentActivities:
+
+JavaScript
+
+// src/data/mockGlobalData.js (append this to the existing file)
+
+export const mockRecentActivities = [
+  {
+    type: 'alert',
+    description: 'High latency detected in US-East data center.',
+    timestamp: '2025-06-15T13:50:00Z',
+    status: 'critical',
+  },
+  {
+    type: 'maintenance',
+    description: 'Scheduled database upgrade completed in EU-West-1.',
+    timestamp: '2025-06-15T13:30:00Z',
+    status: 'resolved',
+  },
+  {
+    type: 'incident',
+    description: 'Partial service disruption in APAC region due to network issue.',
+    timestamp: '2025-06-15T13:15:00Z',
+    status: 'warning',
+  },
+  {
+    type: 'alert',
+    description: 'CPU utilization spike on primary authentication server.',
+    timestamp: '2025-06-15T13:05:00Z',
+    status: 'warning',
+  },
+  {
+    type: 'security',
+    description: 'New security patch applied to all edge locations.',
+    timestamp: '2025-06-15T12:45:00Z',
+    status: 'info',
+  },
+  {
+    type: 'deployment',
+    description: 'New feature deployed to production environment (v2.1).',
+    timestamp: '2025-06-15T12:00:00Z',
+    status: 'info',
+  },
+];
+
+
+
+
+
+
+
+
+
+
+
+Deep Research
+
+Canvas
+

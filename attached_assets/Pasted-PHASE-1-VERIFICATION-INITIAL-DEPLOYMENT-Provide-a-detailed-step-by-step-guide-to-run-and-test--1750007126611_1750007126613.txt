@@ -1,0 +1,40 @@
+PHASE 1: VERIFICATION & INITIAL DEPLOYMENT
+
+"Provide a detailed, step-by-step guide to run and test the frontend locally."
+Goal: Ensure the React app starts correctly, authentication works, and basic UI elements load.
+"Walk me through testing each core Netlify Function locally."
+Goal: Verify netlify-api-proxy.js can call Netlify API (with dummy data for now), ai-assistant.js can interact with OpenAI, etc.
+"Generate the complete netlify.toml file needed for continuous deployment."
+Goal: Get the build commands, publish directory, functions directory, and redirects configured correctly.
+"Provide detailed instructions on how to link this Replit project to a new GitHub repository, and then connect that GitHub repository to Netlify for continuous deployment."
+Goal: Get the project live.
+"Explain exactly how to set up all required environment variables in Netlify for this project, including NETLIFY_ACCESS_TOKEN, OPENAI_API_KEY, and Firebase keys."
+Goal: Ensure the live deployment has access to all necessary secrets.
+"Show me how to configure the Netlify webhooks for alert-webhook-processor.js."
+Goal: Ensure Netlify can send deploy status updates to your backend.
+PHASE 2: IMPLEMENTING ADVANCED FEATURES & DATA FLOWS
+
+"Guide me on implementing the real-time event streaming for site statuses and alerts using Server-Sent Events (SSE) via realtime-streamer.js. Provide the necessary frontend (React) and backend (Function) code."
+Goal: Get those live updates flowing on the dashboard.
+"Provide the specific code and logic for ai-analyzer.js to perform a basic anomaly detection on Netlify build times and suggest a common fix."
+Goal: Start building the proactive AI capabilities.
+"Show me an example implementation of the auto-healing-trigger.js function for a 'Clear Cache & Redeploy' action, including frontend button integration."
+Goal: Implement the first self-healing workflow.
+"Walk me through implementing granular Role-Based Access Control (RBAC) in detail, including Firebase Security Rules for Firestore and frontend checks using AuthGuard.jsx."
+Goal: Secure the platform with different user roles.
+"Provide the code for the audit-logger.js function and show an example of how other Netlify Functions (like deploy triggers) would call it to log actions."
+Goal: Get comprehensive auditing in place.
+"How can I integrate Lighthouse audits using lighthouse-auditor.js? Provide the function code and instructions for displaying results on the SiteDetail.jsx page."
+Goal: Add performance monitoring.
+PHASE 3: REFINEMENT, OPTIMIZATION & EXPANSION
+
+"Suggest ways to further optimize the React app for performance, including code splitting and lazy loading of components."
+Goal: Make the UI even faster.
+"Provide ideas and code snippets for more sophisticated data visualizations for site metrics and AI insights using recharts on the DashboardOverview.jsx."
+Goal: Enhance the visual appeal and clarity of data.
+"How can I extend the AIAssistant.jsx to parse and display more complex AI responses, such as code snippets or detailed analysis tables?"
+Goal: Make the AI assistant more powerful.
+"Suggest the next key business dashboard (e.g., Commerce Empire, SEO Marketing) to integrate into this unified system, and outline the steps for adding its Netlify Functions and corresponding React views."
+Goal: Start integrating the other "systems" into the unified dashboard.
+"What are the best practices for logging and debugging Netlify Functions in production?"
+Goal: Prepare for ongoing maintenance.

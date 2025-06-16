@@ -1,0 +1,235 @@
+
+import React, { useState, useEffect } from 'react';
+import { useRealtimeData } from '../context/RealtimeDataContext';
+import { useApi } from '../hooks/useApi';
+import AnimatedCard from './AnimatedCard';
+
+const AIAssistant = ({ user, onShowToast }) => {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  const { post } = useApi();
+  const { aiInsights, getLatestAIInsights } = useRealtimeData();
+
+  useEffect(() => {
+    // Add welcome message
+    setMessages([{
+      id: 'welcome',
+      type: 'assistant',
+      content: 'Hello! I\'m your AI deployment assistant. I can help analyze your deployment metrics, suggest optimizations, and provide insights. What would you like to know?',
+      timestamp: new Date().toISOString()
+    }]);
+  }, []);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsAnalyzing(true);
+
+    try {
+      // Mock AI response - in real implementation, call ai-analyzer function
+      const response = await generateMockAIResponse(inputMessage);
+      
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: response,
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (err) {
+      onShowToast('AI analysis failed: ' + err.message, 'error');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+  const generateMockAIResponse = async (query) => {
+    // Simulate AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const lowerQuery = query.toLowerCase();
+
+    if (lowerQuery.includes('performance') || lowerQuery.includes('slow')) {
+      return "Based on your recent deployment metrics, I've detected that build times have increased by 23% over the past week. This could be due to:\n\n• Increased bundle size\n• New dependencies\n• Infrastructure changes\n\nI recommend reviewing your recent commits and considering build optimization strategies.";
+    }
+
+    if (lowerQuery.includes('error') || lowerQuery.includes('fail')) {
+      return "I've analyzed your error patterns and found that 85% of recent failures are related to dependency resolution. Here are my recommendations:\n\n• Clear build cache\n• Update package versions\n• Review lock file consistency\n\nWould you like me to trigger an automated recovery process?";
+    }
+
+    if (lowerQuery.includes('traffic') || lowerQuery.includes('users')) {
+      return "Traffic analysis shows a 40% increase in the past 24 hours. Your infrastructure is handling the load well, but I recommend:\n\n• Monitor response times closely\n• Consider scaling up if traffic continues to grow\n• Review CDN cache performance\n\nCurrent performance score: 94/100";
+    }
+
+    if (lowerQuery.includes('optimize') || lowerQuery.includes('improve')) {
+      return "Here are my top optimization recommendations for your deployment pipeline:\n\n• Enable parallel builds (potential 30% time savings)\n• Implement incremental builds\n• Optimize image compression (20MB+ savings detected)\n• Set up edge caching for static assets\n\nShall I create a detailed optimization plan?";
+    }
+
+    return "I understand you're asking about: \"" + query + "\"\n\nI can help you with:\n• Performance analysis\n• Error diagnostics\n• Traffic optimization\n• Deployment strategies\n• Security recommendations\n\nCould you be more specific about what aspect you'd like me to analyze?";
+  }
+  const triggerAnalysis = async (siteId = 'toyparty-main') => {
+    setIsAnalyzing(true);
+    try {
+      const response = await post('/.netlify/functions/ai-analyzer', {
+        siteId,
+        buildDurationHistory: [120, 115, 180, 160, 200],
+        trafficData: [500, 600, 800, 1200, 950],
+        errorRates: [2.1, 1.8, 3.2, 2.5, 1.9]
+      });
+
+      if (response.success) {
+        onShowToast('AI analysis completed', 'success');
+        
+        const analysisMessage = {
+          id: Date.now().toString(),
+          type: 'analysis',
+          content: response.analysis,
+          timestamp: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, analysisMessage]);
+      }
+    } catch (err) {
+      onShowToast('Analysis failed: ' + err.message, 'error');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">🤖 AI Assistant</h1>
+        <button
+          onClick={() => triggerAnalysis()}
+          disabled={isAnalyzing}
+          className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg"
+        >
+          {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Proactive Insights Panel */}
+        <AnimatedCard>
+          <div className="p-6">
+            <h3 className="text-lg font-bold mb-4">🔮 Proactive Insights</h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {getLatestAIInsights().length > 0 ? (
+                getLatestAIInsights().map(insight => (
+                  <div key={insight.id} className={`p-3 rounded-lg border-l-4 ${
+                    insight.insightType === 'anomaly' 
+                      ? 'bg-red-50 border-red-400' 
+                      : 'bg-blue-50 border-blue-400'
+                  }`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        insight.insightType === 'anomaly' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {insight.insightType}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {insight.confidence}% confidence
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium mb-1">{insight.message}</p>
+                    <p className="text-xs text-gray-600 mb-2">Site: {insight.siteId}</p>
+                    <p className="text-xs text-blue-600">
+                      💡 {insight.recommendedAction}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">
+                  No proactive insights available
+                </p>
+              )}
+            </div>
+          </div>
+        </AnimatedCard>
+
+        {/* Chat Interface */}
+        <div className="lg:col-span-2">
+          <AnimatedCard>
+            <div className="p-6">
+              <h3 className="text-lg font-bold mb-4">💬 AI Chat Assistant</h3>
+              
+              {/* Messages */}
+              <div className="bg-gray-50 rounded-lg p-4 h-96 overflow-y-auto mb-4">
+                {messages.map(message => (
+                  <div key={message.id} className={`mb-4 ${
+                    message.type === 'user' ? 'text-right' : 'text-left'
+                  }`}>
+                    <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
+                      message.type === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : message.type === 'analysis'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-white text-gray-800 shadow'
+                    }`}>
+                      {message.type === 'analysis' ? (
+                        <div>
+                          <div className="font-bold mb-2">🧠 AI Analysis Results</div>
+                          <pre className="text-xs whitespace-pre-wrap">
+                            {JSON.stringify(message.content, null, 2)}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-wrap text-sm">
+                          {message.content}
+                        </div>
+                      )}
+                      <div className="text-xs opacity-70 mt-2">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {isAnalyzing && (
+                  <div className="text-left mb-4">
+                    <div className="inline-block bg-gray-200 text-gray-600 p-3 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        <span className="text-sm">AI is analyzing...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input */}
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Ask me about your deployments..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isAnalyzing || !inputMessage.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-2 rounded-lg"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </AnimatedCard>
+        </div>
+      </div>
+    </div>
+  );
+}
+export default AIAssistant;

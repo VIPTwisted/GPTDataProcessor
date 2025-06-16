@@ -1,0 +1,153 @@
+
+import React, { useState } from 'react';
+
+const AuthGuard = ({ user, onLogin, children }) => {
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (user) {
+    return children;
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await onLogin({
+        ...credentials,
+        action: isRegistering ? 'register' : 'login'
+      });
+    } catch (err) {
+      console.error('Auth error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setCredentials({
+      ...credentials,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4">🚀</div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Master Deployment Orchestrator
+          </h1>
+          <p className="text-gray-600">
+            Enterprise-grade autonomous deployment platform
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={credentials.email}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="admin@company.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={credentials.password}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Processing...
+              </div>
+            ) : (
+              <>
+                {isRegistering ? 'Create Account' : 'Sign In'}
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsRegistering(!isRegistering)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {isRegistering 
+              ? 'Already have an account? Sign in' 
+              : 'Need an account? Register'
+            }
+          </button>
+        </div>
+
+        {/* Demo Access */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-medium text-gray-800 mb-2">Demo Access</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Use these credentials for demonstration:
+          </p>
+          <div className="space-y-1 text-sm">
+            <p><strong>Email:</strong> admin@toyparty.com</p>
+            <p><strong>Password:</strong> demo123</p>
+          </div>
+          <button
+            onClick={() => {
+              setCredentials({
+                email: 'admin@toyparty.com',
+                password: 'demo123'
+              });
+            }}
+            className="mt-3 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
+          >
+            Use Demo Credentials
+          </button>
+        </div>
+
+        {/* Security Features */}
+        <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+          <div className="flex flex-col items-center">
+            <div className="text-2xl mb-1">🔒</div>
+            <span className="text-xs text-gray-600">Secure</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-2xl mb-1">🛡️</div>
+            <span className="text-xs text-gray-600">Protected</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-2xl mb-1">⚡</div>
+            <span className="text-xs text-gray-600">Fast</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthGuard;

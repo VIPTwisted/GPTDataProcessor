@@ -1,0 +1,158 @@
+🧑‍💼 HR & EMPLOYEE MANAGEMENT MODULE
+(Path: /hr | Talent Risk Forecasting, Onboarding Micro-Tracker, Skill Matrix, Coaching Flags)
+🎯 Core Capabilities:
+⚠️ Attrition & Absentee Risk Radar
+
+🧠 Skill Matrix + Development Plans
+
+🏁 Live New Hire Onboarding Tracker
+
+👥 AI-Flagged Coaching Opportunities
+
+🩺 Team wellness & engagement trends (extensible)
+
+✅ Step 1: Create mockHRData.js
+js
+Copy
+Edit
+// src/data/mockHRData.js
+export const mockAttritionRisk = [
+  { id: 'E101', name: 'Kira Lane', role: 'Sales Rep', location: 'Orange', risk: 0.78, reason: 'Missed 3 shifts' },
+  { id: 'E128', name: 'Marcus Lee', role: 'Support Agent', location: 'Southington', risk: 0.68, reason: 'Low CSAT, delayed tickets' },
+  { id: 'E201', name: 'Nina Patel', role: 'Retail Lead', location: 'Hartford', risk: 0.55, reason: 'Recent pay dispute' }
+];
+
+export const mockOnboardingProgress = [
+  { name: 'Aliyah Soto', trainer: 'Sam W.', station: 'POS Reg 2', percent: 60 },
+  { name: 'Devin Moore', trainer: 'Tamika L.', station: 'Warehouse Aisle 4', percent: 35 },
+  { name: 'Kai Torres', trainer: 'Carlos J.', station: 'Returns Desk', percent: 80 }
+];
+
+export const mockSkillMatrix = [
+  { name: 'Dominic R.', sales: 5, support: 3, tech: 1 },
+  { name: 'Jules K.', sales: 4, support: 2, tech: 4 },
+  { name: 'Isha N.', sales: 2, support: 5, tech: 3 },
+];
+
+export const mockCoachingFlags = [
+  { name: 'Brianna C.', issue: 'Slow checkout speed', suggestion: 'POS refresh session', severity: 'Medium' },
+  { name: 'Leo T.', issue: 'Missed compliance cert.', suggestion: 'Auto-enroll LMS course', severity: 'High' },
+];
+✅ Step 2: Create HROverviewView.jsx
+jsx
+Copy
+Edit
+// src/views/HROverviewView.jsx
+import React from 'react';
+import {
+  mockAttritionRisk,
+  mockOnboardingProgress,
+  mockSkillMatrix,
+  mockCoachingFlags
+} from '../data/mockHRData';
+import AnimatedCard from '../components/widgets/AnimatedCard';
+
+const SkillBar = ({ level }) => (
+  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+    <div className="h-2 bg-indigo-500" style={{ width: `${level * 20}%` }}></div>
+  </div>
+);
+
+const HROverviewView = () => {
+  return (
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">HR & Workforce Intelligence</h1>
+      <p className="text-md text-gray-600 dark:text-gray-400 mb-8">
+        AI-powered people insights, coaching alerts, and training progression.
+      </p>
+
+      {/* Attrition Risk */}
+      <AnimatedCard title="Attrition & Absentee Risk Radar" subTitle="AI-forecasted based on behavior patterns" className="mb-8">
+        <ul className="space-y-4 text-sm">
+          {mockAttritionRisk.map((e) => (
+            <li key={e.id} className="flex justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">{e.name} ({e.role} - {e.location})</p>
+                <p className="text-xs text-gray-500">{e.reason}</p>
+              </div>
+              <span className={`font-semibold ${e.risk >= 0.7 ? 'text-red-500' : e.risk >= 0.6 ? 'text-orange-500' : 'text-yellow-500'}`}>
+                Risk: {(e.risk * 100).toFixed(0)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Onboarding Progress */}
+      <AnimatedCard title="Live Onboarding Micro-Tracker" subTitle="For new hires < 90 days" className="mb-8">
+        <ul className="space-y-4 text-sm">
+          {mockOnboardingProgress.map((n, i) => (
+            <li key={i}>
+              <p className="text-gray-800 dark:text-white">
+                <strong>{n.name}</strong> @ {n.station} (Trainer: {n.trainer})
+              </p>
+              <div className="w-full h-2 mt-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                <div
+                  className="h-2 bg-blue-500 transition-all"
+                  style={{ width: `${n.percent}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{n.percent}% of current module completed</p>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Skill Matrix */}
+      <AnimatedCard title="Employee Skill Matrix" subTitle="Multidomain capability profiles" className="mb-8">
+        <ul className="text-sm space-y-4">
+          {mockSkillMatrix.map((emp, i) => (
+            <li key={i}>
+              <p className="font-bold text-gray-900 dark:text-white">{emp.name}</p>
+              <p className="text-xs text-gray-500">Sales</p>
+              <SkillBar level={emp.sales} />
+              <p className="text-xs text-gray-500 mt-1">Support</p>
+              <SkillBar level={emp.support} />
+              <p className="text-xs text-gray-500 mt-1">Tech</p>
+              <SkillBar level={emp.tech} />
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+
+      {/* Coaching Flags */}
+      <AnimatedCard title="AI Coaching & Compliance Flags" subTitle="Generated from performance signals">
+        <ul className="space-y-4 text-sm">
+          {mockCoachingFlags.map((f, i) => (
+            <li key={i} className="flex justify-between">
+              <div>
+                <p className="font-medium text-gray-800 dark:text-white">{f.name}</p>
+                <p className="text-xs text-gray-500">{f.issue}</p>
+              </div>
+              <span className={`text-xs font-semibold ${f.severity === 'High' ? 'text-red-500' : 'text-yellow-500'}`}>
+                {f.suggestion}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </AnimatedCard>
+    </div>
+  );
+};
+
+export default HROverviewView;
+✅ Step 3: Add Route in App.js
+jsx
+Copy
+Edit
+import HROverviewView from './views/HROverviewView';
+// ...
+<Route path="/hr" element={<HROverviewView />} />
+✅ Delivered:
+Module	Feature
+⚠️ Risk Forecast	AI-driven attrition, absentee predictors
+🏁 Onboarding Tracker	Live % progress per trainee & task
+🧠 Skill Matrix	Cross-role capability map
+📋 Coaching Flags	Auto-generated training alerts
+🌱 Extensible	Ready for performance reviews, wellness dashboards
+

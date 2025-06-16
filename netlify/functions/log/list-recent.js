@@ -1,0 +1,88 @@
+
+// netlify/functions/log/list-recent.js
+const fs = require('fs');
+const path = require('path');
+
+exports.handler = async (event) => {
+  try {
+    const { limit = 10, actionType, confidence_min } = event.queryStringParameters || {}
+    const logDir = '/tmp/audit-logs';
+
+    if (!fs.existsSync(logDir)) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify([])
+      }
+    }
+
+    // Read all log files
+    const logFiles = fs.readdirSync(logDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        try {
+          const filePath = path.join(logDir, f);
+          const stats = fs.statSync(filePath);
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          return {
+            ...data,
+            fileName: f,
+            timestamp: data.timestamp || stats.mtime.toISOString()
+          }
+        } catch (err) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    // Sort by timestamp (most recent first)
+    logFiles.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Apply filters
+    let filteredLogs = logFiles;
+
+    if (actionType) {
+      filteredLogs = filteredLogs.filter(log => log.actionType === actionType);
+    }
+
+    if (confidence_min) {
+      const minConfidence = parseFloat(confidence_min);
+      filteredLogs = filteredLogs.filter(log => log.confidence >= minConfidence);
+    }
+
+    // Limit results
+    const limitedLogs = filteredLogs.slice(0, parseInt(limit));
+
+    // Format for memory consumption
+    const memoryLogs = limitedLogs.map(log => ({
+      id: log.id || log.fileName,
+      timestamp: log.timestamp,
+      actionType: log.actionType,
+      playbookId: log.context?.playbookId || 'unknown',
+      confidence: log.confidence,
+      outcome: log.actionType.includes('approved') ? 'approved' :
+               log.actionType.includes('rejected') ? 'rejected' :
+               log.actionType.includes('executed') ? 'executed' : 'pending',
+      notes: log.notes,
+      actor: log.actor,
+      impact: log.context?.estimatedImpact || 'unknown'
+    }));
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify(memoryLogs)
+    }
+  } catch (error) {
+    console.error('List recent logs error:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: 'Failed to retrieve recent logs',
+        details: error.message
+      })
+    }
+  }
+}
